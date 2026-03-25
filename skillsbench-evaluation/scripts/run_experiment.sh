@@ -73,7 +73,12 @@ sanitize_model() {
 cd "$REPO_ROOT"
 
 # Add module paths to PYTHONPATH
-export PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${REPO_ROOT}/llm-skills.llm-providers:${PYTHONPATH:-}"
+# NOTE: c2_extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
+# Python only uses the first match, so we set PYTHONPATH per-phase below.
+BASE_PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-skills.llm-providers:${PYTHONPATH:-}"
+PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
+PYTHONPATH_SKILL="${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
+export PYTHONPATH="${PYTHONPATH_SKILL}"
 
 log "Repo root: ${REPO_ROOT}"
 log "Data directory:  ${DATA_DIR}"
@@ -105,7 +110,7 @@ for domain in "${DOMAINS[@]}"; do
         continue
     fi
     log "  Extracting tasks for domain: ${domain}"
-    python -m c2_extraction.task_extractor \
+    PYTHONPATH="${PYTHONPATH_TEXT}" python -m c2_extraction.task_extractor \
         --dataset "${DATASET}" --subset "${SUBSET}" \
         --domain "${domain}" \
         --max-chunks "${MAX_CHUNKS}" --chunk-size "${CHUNK_SIZE}" \

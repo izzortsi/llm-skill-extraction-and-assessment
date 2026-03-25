@@ -108,7 +108,7 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin" ]]; 
 else
     SEP=":"
 fi
-export PYTHONPATH="${PY_REPO_ROOT}/llm-skills.skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/llm-skills.llm-providers${SEP}${PYTHONPATH:-}"
+export PYTHONPATH="${PY_REPO_ROOT}/llm-skills.skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/llm-skills.shared-data${SEP}${PY_REPO_ROOT}/llm-skills.llm-providers${SEP}${PYTHONPATH:-}"
 
 if [[ "$CLEAN" == true ]]; then
     log "Cleaning old validation results in ${VALIDATION_DIR}"
