@@ -37,14 +37,17 @@ Commands:
   run       Run pipeline stages (full or partial)
   config    Manage experiment profiles (create, list, show, delete)
   status    Show pipeline run directory status
+  setup     Pre-flight checks and environment validation
 
 Examples:
   python -m c4_cli.main run --stages all --minimal --clean
   python -m c4_cli.main run --stages 1-4 --profile my-experiment
   python -m c4_cli.main run --stages evaluation
+  python -m c4_cli.main run --interactive
   python -m c4_cli.main config list
-  python -m c4_cli.main config show default
+  python -m c4_cli.main config create --interactive
   python -m c4_cli.main status
+  python -m c4_cli.main setup
 """,
     )
     parser.add_argument("command", help="Command to run")
@@ -65,6 +68,11 @@ Examples:
     elif args.command == "status":
         sys.argv = ["llm-skills status"] + args.args
         from c4_cli.command_status import main as cmd_main
+        cmd_main()
+
+    elif args.command == "setup":
+        sys.argv = ["llm-skills setup"] + args.args
+        from c4_cli.command_setup import main as cmd_main
         cmd_main()
 
     else:

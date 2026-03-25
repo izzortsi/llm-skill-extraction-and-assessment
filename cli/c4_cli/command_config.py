@@ -38,6 +38,8 @@ def main() -> None:
                         help="Config subcommand")
     parser.add_argument("name", nargs="?", default="",
                         help="Profile name (for create, show, delete)")
+    parser.add_argument("--interactive", "-i", action="store_true",
+                        help="Create profile interactively (for 'create' subcommand)")
 
     args = parser.parse_args()
 
@@ -45,13 +47,22 @@ def main() -> None:
         print_profiles_list(list_profiles())
 
     elif args.subcommand == "create":
-        if not args.name:
-            console.print("Usage: llm-skills config create <name>")
-            sys.exit(1)
-        profile = PipelineProfile(profile_name=args.name)
-        path = save_profile(profile)
-        console.print(f"Created profile '[cyan]{args.name}[/cyan]' at {path}")
-        console.print(f"Edit the YAML file, then run: [bold]llm-skills run --profile {args.name}[/bold]")
+        if args.interactive:
+            from c4_cli.interactive import build_profile_interactive
+            profile = build_profile_interactive()
+            if args.name:
+                profile.profile_name = args.name
+            path = save_profile(profile)
+            console.print(f"Created profile '[cyan]{profile.profile_name}[/cyan]' at {path}")
+        else:
+            if not args.name:
+                console.print("Usage: llm-skills config create <name>")
+                console.print("  or:  llm-skills config create --interactive")
+                sys.exit(1)
+            profile = PipelineProfile(profile_name=args.name)
+            path = save_profile(profile)
+            console.print(f"Created profile '[cyan]{args.name}[/cyan]' at {path}")
+            console.print(f"Edit the YAML file, then run: [bold]llm-skills run --profile {args.name}[/bold]")
 
     elif args.subcommand == "show":
         if not args.name:

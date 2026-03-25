@@ -13,6 +13,7 @@ Options:
     --minimal            Override profile with minimal settings
     --run-dir PATH       Override run directory
     --quiet              Suppress stage output
+    --interactive        Build profile interactively before running
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ import sys
 from pathlib import Path
 
 from c0_config.pipeline_profile import PipelineProfile, apply_minimal
-from c1_tools.profile_loader import load_profile, PROFILES_DIR
+from c1_tools.profile_loader import load_profile, save_profile, PROFILES_DIR
 from c2_orchestration.pipeline_executor import execute_pipeline
 from c4_cli.rich_ui import print_header, print_summary
 
@@ -44,12 +45,23 @@ def main() -> None:
                         help="Override run directory path")
     parser.add_argument("--quiet", action="store_true",
                         help="Suppress stage subprocess output")
+    parser.add_argument("--interactive", "-i", action="store_true",
+                        help="Build profile interactively before running")
 
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent.parent.parent
 
-    if args.profile:
+    # interactive mode: build profile via prompts
+    if args.interactive:
+        from c4_cli.interactive import build_profile_interactive, prompt_confirm
+        profile = build_profile_interactive()
+        if prompt_confirm("Save this profile?", True):
+            path = save_profile(profile)
+            print(f"Saved to {path}")
+        if not prompt_confirm("Run pipeline now?", True):
+            return
+    elif args.profile:
         try:
             profile = load_profile(args.profile)
         except FileNotFoundError:
