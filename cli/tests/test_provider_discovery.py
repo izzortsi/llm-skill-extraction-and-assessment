@@ -88,14 +88,16 @@ def test_discover_providers_returns_all():
     with patch("c1_tools.provider_discovery._probe_lmproxy") as m1, \
          patch("c1_tools.provider_discovery._probe_ollama") as m2, \
          patch("c1_tools.provider_discovery._check_anthropic") as m3, \
-         patch("c1_tools.provider_discovery._check_openai") as m4:
+         patch("c1_tools.provider_discovery._check_openai") as m4, \
+         patch("c1_tools.provider_discovery._check_claude_code") as m5:
         m1.return_value = ProviderStatus("lmproxy", False, [], "", "down")
         m2.return_value = ProviderStatus("ollama", False, [], "", "down")
         m3.return_value = ProviderStatus("anthropic", False, [], "", "no key")
         m4.return_value = ProviderStatus("openai", False, [], "", "no key")
+        m5.return_value = ProviderStatus("claude-code", False, [], "", "not found")
         results = discover_providers()
 
-    assert len(results) == 4
+    assert len(results) == 5
     names = [r.name for r in results]
     assert "lmproxy" in names
     assert "ollama" in names

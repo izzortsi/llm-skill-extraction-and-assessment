@@ -140,6 +140,27 @@ def collect_lmproxy_models(lmproxy_url: str, config_file: str) -> List[str]:
         return []
 
 
+def _check_claude_code() -> ProviderStatus:
+    """Check if claude CLI is available on PATH."""
+    status = ProviderStatus(name="claude-code", reachable=False)
+    try:
+        result = subprocess.run(
+            ["claude", "--version"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            status.reachable = True
+            status.models = ["claude-code"]
+            status.message = f"CLI available ({result.stdout.strip()})"
+        else:
+            status.message = "claude CLI returned error"
+    except FileNotFoundError:
+        status.message = "claude CLI not found on PATH"
+    except Exception as exc:
+        status.message = str(exc)
+    return status
+
+
 def discover_providers(
     lmproxy_url: str = "http://localhost:8080/v1",
     ollama_url: str = "http://localhost:11434/v1",
@@ -156,5 +177,6 @@ def discover_providers(
     ollama_status = _probe_ollama(ollama_url)
     anthropic_status = _check_anthropic()
     openai_status = _check_openai()
+    claude_status = _check_claude_code()
 
-    return [lmproxy_status, ollama_status, anthropic_status, openai_status]
+    return [lmproxy_status, ollama_status, anthropic_status, openai_status, claude_status]
