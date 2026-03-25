@@ -8,67 +8,9 @@ replacing or supplementing keyword-based evaluation.
 
 from __future__ import annotations
 
-import os
 import json
 from dataclasses import dataclass
 from typing import Optional
-
-from openai import OpenAI
-
-
-# ---------------------------------------------------------------------------
-# Inline mock provider (replaces c1_providers.mock_provider.MockProvider)
-# ---------------------------------------------------------------------------
-
-class _MockProvider:
-    def __init__(self, model="mock-model", seed=42):
-        self.model_name = model
-
-    def chat(self, messages, tools=None):
-        class _R:
-            message = {"role": "assistant", "content": "Mock response."}
-            usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-        return _R()
-
-
-# ---------------------------------------------------------------------------
-# OpenAI-SDK-based provider (replaces c1_providers.providers.create_provider)
-# ---------------------------------------------------------------------------
-
-_LMPROXY_BASE_URL = os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080")
-
-
-def _create_openai_provider(model: str, base_url: str = "", api_key: str = "lmproxy"):
-    """Return a thin wrapper around the OpenAI SDK pointed at lmproxy."""
-    effective_base = base_url or _LMPROXY_BASE_URL
-    client = OpenAI(base_url=effective_base, api_key=api_key)
-
-    class _Provider:
-        def __init__(self):
-            self.model_name = model
-            self._client = client
-
-        def chat(self, messages, tools=None):
-            resp = self._client.chat.completions.create(
-                model=model,
-                messages=messages,
-            )
-            choice = resp.choices[0]
-            content = choice.message.content or ""
-            usage = {
-                "prompt_tokens": resp.usage.prompt_tokens if resp.usage else 0,
-                "completion_tokens": resp.usage.completion_tokens if resp.usage else 0,
-                "total_tokens": resp.usage.total_tokens if resp.usage else 0,
-            }
-
-            class _R:
-                pass
-            r = _R()
-            r.message = {"role": "assistant", "content": content}
-            r.usage = usage
-            return r
-
-    return _Provider()
 
 
 JUDGE_PROMPT_TEMPLATE = """You are a precise evaluator for a reading comprehension benchmark.
@@ -193,8 +135,8 @@ class LLMJudgeEvaluator:
     def from_config(cls, judge_config) -> Optional["LLMJudgeEvaluator"]:
         """Create a judge evaluator from JudgeConfig.
 
-        Uses _create_openai_provider (OpenAI SDK via lmproxy) instead of
-        the former c1_providers dependency.
+        Uses c1_providers.providers.create_provider directly instead of
+        grpt-training-data-pipeline sys.path manipulation.
 
         Args:
             judge_config: JudgeConfig with provider, model, base_url
@@ -208,12 +150,14 @@ class LLMJudgeEvaluator:
         model_spec = judge_config.to_model_spec()
 
         if model_spec.provider == "mock":
-            provider = _MockProvider(model=model_spec.model, seed=99)
+            from c1_providers.mock_provider import MockProvider
+            provider = MockProvider(model=model_spec.model, seed=99)
         else:
-            provider = _create_openai_provider(
-                model=model_spec.model,
-                base_url=model_spec.base_url or "",
-            )
+            from c1_providers.providers import create_provider
+            kwargs = {"model": model_spec.model}
+            if model_spec.base_url:
+                kwargs["base_url"] = model_spec.base_url
+            provider = create_provider(model_spec.provider, **kwargs)
 
         return cls(provider)
 

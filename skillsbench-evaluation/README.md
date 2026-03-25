@@ -27,7 +27,7 @@ python -m c4_cli.main heatmaps       --help  # generate visualizations
 python -m c4_cli.main run-skillsbench \
     --tasks ../llm-skills.shared-data/skillmix-pipeline-run/stage1-task-extraction/tasks.json \
     --skills ../llm-skills.shared-data/skillmix-pipeline-run/stage4-skill-verification/verified_skills.json \
-    --config lmproxy \
+    --config ../llm-skills.llm-providers/configs/models.yaml \
     --mode singlecall \
     --output results.json -v
 
@@ -50,5 +50,5 @@ tests/             test_litellm_provider, test_model_config
 
 ## dependencies
 
-- lmproxy (OpenAI-compatible LLM proxy, running at LMPROXY_BASE_URL)
+- llm-skills.llm-providers (LLM provider abstraction, model config)
 - llm-skills.shared-data (ExtractedTask, ExtractedSkill types via c1_types/)

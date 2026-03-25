@@ -12,3 +12,4 @@ if str(_repo) not in sys.path:
 import _bootstrap
 
 _bootstrap.setup_project(_project)
+_bootstrap.setup_providers()

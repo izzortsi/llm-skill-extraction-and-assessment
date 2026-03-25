@@ -14,47 +14,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import os
 import time
 from pathlib import Path
 from typing import Any, List
 
-import openai
-
 from c1_types.extracted_task import ExtractedTask, load_extracted_tasks, save_extracted_tasks
-
-
-class _LMProxyResult:
-    def __init__(self, response):
-        choice = response.choices[0]
-        self.message = {"role": "assistant", "content": choice.message.content}
-        self.usage = {}
-        if response.usage:
-            self.usage = {
-                "prompt_tokens": response.usage.prompt_tokens or 0,
-                "completion_tokens": response.usage.completion_tokens or 0,
-                "total_tokens": response.usage.total_tokens or 0,
-            }
-
-
-class _LMProxyClient:
-    def __init__(self, model, base_url="", api_key=""):
-        self.model = model
-        self._client = openai.OpenAI(
-            base_url=base_url or os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
-            api_key=api_key or "lmproxy",
-        )
-
-    @property
-    def model_name(self):
-        return self.model
-
-    def chat(self, messages, tools=None):
-        kwargs = {"model": self.model, "messages": messages}
-        if tools:
-            kwargs["tools"] = tools
-        response = self._client.chat.completions.create(**kwargs)
-        return _LMProxyResult(response)
 from c2_extraction.trace_capturer import (
     ReasoningTrace,
     _parse_structured_trace,
@@ -225,6 +189,7 @@ def run_task_for_trace(
     raw_steps = _extract_raw_steps(clean_response)
 
     model_name = getattr(provider, "model_name", getattr(provider, "model", "unknown"))
+    # TODO: import from llm-skills.llm-providers
     import re as _re
     short_model = _re.sub(r"^claude-", "", model_name)
     short_model = _re.sub(r"[:/]", "-", short_model)
@@ -284,7 +249,9 @@ def main() -> None:
     if not args.tasks.exists():
         raise FileNotFoundError(f"Tasks file not found: {args.tasks}")
 
-    provider = _LMProxyClient(args.model)
+    # TODO: import from llm-skills.llm-providers
+    from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+    provider = create_provider(args.provider, args.model)
 
     tasks = load_extracted_tasks(args.tasks)
     if args.verbose:

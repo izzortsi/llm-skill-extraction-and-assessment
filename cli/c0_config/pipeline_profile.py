@@ -33,7 +33,7 @@ class PipelineProfile:
     trace_model: str = "claude-opus-4-6"
 
     # evaluation (stage 5)
-    config_file: str = ""
+    config_file: str = "llm-skills.llm-providers/configs/models.yaml"
     ollama_url: str = "http://localhost:11434/v1"
     eval_models: List[str] = field(default_factory=lambda: ["qwen2.5-3b", "qwen2.5-7b"])
     modes: List[str] = field(default_factory=lambda: ["singlecall", "stepwise", "guided"])

@@ -10,12 +10,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import List, Optional
 
-import openai
-
+from c1_providers.providers import create_provider
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
 from c3_skillmix.runner import run_skillmix_experiment
 

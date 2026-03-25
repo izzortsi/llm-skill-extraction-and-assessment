@@ -1,0 +1,35 @@
+# Model configuration for LiteLLM routing.
+# Copy to configs/models.yaml and update endpoints/keys for your environment.
+#
+# Each model entry maps an alias to a model string and optional routing params.
+#
+# Fields:
+#   litellm_model  (required) - Model identifier. Use "openai/<model>" prefix for
+#                                LiteLLM routing (vLLM, Ollama). Use bare model name
+#                                for native providers.
+#   provider       (optional) - "litellm" (default), "anthropic" (native, supports
+#                                OAuth), or "openai" (native OpenAI SDK).
+#   api_base       (optional) - Base URL for the API endpoint
+#   api_key_env    (optional) - Environment variable name containing the API key
+#   api_key        (optional) - Direct API key (prefer api_key_env for security)
+
+models:
+  qwen2.5-3b:
+    litellm_model: "openai/qwen2.5:3b"
+    api_base: "http://localhost:8000/v1"
+
+  qwen2.5-7b:
+    litellm_model: "openai/qwen2.5:7b"
+    api_base: "http://localhost:8000/v1"
+
+  glm-5-turbo:
+    litellm_model: "openai/glm-5-turbo"
+    api_base: "https://api.z.ai/api/coding/paas/v4"
+    api_key_env: "ZHIPU_API_KEY"
+
+  claude-opus-4-6:
+    provider: "anthropic"
+    litellm_model: "claude-opus-4-6"
+
+judge:
+  model: "claude-opus-4-6"

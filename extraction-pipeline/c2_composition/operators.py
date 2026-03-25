@@ -18,48 +18,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
-import openai
 
 from c1_tools.skill_registry import Skill, SkillRegistry
-
-
-class _LMProxyResult:
-    def __init__(self, response):
-        choice = response.choices[0]
-        self.message = {"role": "assistant", "content": choice.message.content}
-        self.usage = {}
-        if response.usage:
-            self.usage = {
-                "prompt_tokens": response.usage.prompt_tokens or 0,
-                "completion_tokens": response.usage.completion_tokens or 0,
-                "total_tokens": response.usage.total_tokens or 0,
-            }
-
-
-class _LMProxyClient:
-    def __init__(self, model, base_url="", api_key=""):
-        self.model = model
-        self._client = openai.OpenAI(
-            base_url=base_url or os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
-            api_key=api_key or "lmproxy",
-        )
-
-    @property
-    def model_name(self):
-        return self.model
-
-    def chat(self, messages, tools=None):
-        kwargs = {"model": self.model, "messages": messages}
-        if tools:
-            kwargs["tools"] = tools
-        response = self._client.chat.completions.create(**kwargs)
-        return _LMProxyResult(response)
 
 
 @dataclass
@@ -575,7 +540,7 @@ class SemanticCompositionConfig:
 class SemanticCompositor:
     """LLM-based semantic skill composition operator (alpha_sem).
 
-    Uses the OpenAI SDK pointed at lmproxy for LLM calls.
+    Uses the provider abstraction from c1_providers.providers for LLM calls.
     """
 
     def __init__(self, config: Optional[SemanticCompositionConfig] = None):
@@ -590,7 +555,9 @@ class SemanticCompositor:
     def _get_provider(self):
         """Lazily create the LLM provider."""
         if self._provider is None:
-            self._provider = _LMProxyClient(self.config.model)
+            # TODO: import from llm-skills.llm-providers
+            from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+            self._provider = create_provider(self.config.provider, self.config.model)
         return self._provider
 
     def compose_semantic(
@@ -730,7 +697,7 @@ Now create the composite skill:"""
     def _call_llm(self, prompt: str) -> str:
         """Call LLM provider with prompt.
 
-        Uses the OpenAI SDK pointed at lmproxy.
+        Uses the provider abstraction from c1_providers.providers.
 
         Args:
             prompt: Prompt to send to LLM

@@ -1,0 +1,37 @@
+# configs/models.vllm-cluster.example.yaml
+#
+# Example configuration for a vLLM cluster with multiple GPU nodes.
+# Each model is served by a dedicated vLLM instance on a separate node.
+#
+# To use:
+#   1. Copy this file to configs/models.yaml
+#   2. Update hostnames and ports to match your cluster
+#   3. Set ANTHROPIC_API_KEY env var for the judge model
+#   4. Run: python3 -m c3_skillsbench_eval.corpus_harness --config configs/models.yaml ...
+#
+# vLLM serves an OpenAI-compatible API, so litellm_model uses the
+# "openai/<model>" prefix with the vLLM endpoint as api_base.
+
+models:
+  qwen2.5-3b:
+    litellm_model: "openai/Qwen/Qwen2.5-3B-Instruct"
+    api_base: "http://vllm-gpu-01:8000/v1"
+
+  qwen2.5-7b:
+    litellm_model: "openai/Qwen/Qwen2.5-7B-Instruct"
+    api_base: "http://vllm-gpu-02:8000/v1"
+
+  qwen2.5-14b:
+    litellm_model: "openai/Qwen/Qwen2.5-14B-Instruct"
+    api_base: "http://vllm-gpu-03:8000/v1"
+
+  llama3.1-8b:
+    litellm_model: "openai/meta-llama/Llama-3.1-8B-Instruct"
+    api_base: "http://vllm-gpu-04:8000/v1"
+
+  claude-opus-4-6:
+    litellm_model: "anthropic/claude-opus-4-6"
+    api_key_env: "ANTHROPIC_API_KEY"
+
+judge:
+  model: "claude-opus-4-6"

@@ -21,49 +21,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import re
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-import openai
-
 from c0_utils.text_utils import strip_markdown_fences
-
-
-class _LMProxyResult:
-    def __init__(self, response):
-        choice = response.choices[0]
-        self.message = {"role": "assistant", "content": choice.message.content}
-        self.usage = {}
-        if response.usage:
-            self.usage = {
-                "prompt_tokens": response.usage.prompt_tokens or 0,
-                "completion_tokens": response.usage.completion_tokens or 0,
-                "total_tokens": response.usage.total_tokens or 0,
-            }
-
-
-class _LMProxyClient:
-    def __init__(self, model, base_url="", api_key=""):
-        self.model = model
-        self._client = openai.OpenAI(
-            base_url=base_url or os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
-            api_key=api_key or "lmproxy",
-        )
-
-    @property
-    def model_name(self):
-        return self.model
-
-    def chat(self, messages, tools=None):
-        kwargs = {"model": self.model, "messages": messages}
-        if tools:
-            kwargs["tools"] = tools
-        response = self._client.chat.completions.create(**kwargs)
-        return _LMProxyResult(response)
 from c2_extraction.skill_extractor import ExtractedSkill, load_extracted_skills, save_extracted_skills
 
 
@@ -813,7 +777,9 @@ def main() -> None:
         print(f"Loaded {len(skills)} skills from {args.skills}")
 
     if args.revise:
-        provider = _LMProxyClient(args.model)
+        # TODO: import from llm-skills.llm-providers
+        from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+        provider = create_provider(args.provider, args.model)
 
         revised_skills, results = verify_and_revise(
             skills, provider,

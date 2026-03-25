@@ -154,7 +154,7 @@ trace_provider: anthropic
 trace_model: claude-opus-4-6
 
 # evaluation (stage 5)
-config_file: lmproxy  # uses LMPROXY_BASE_URL
+config_file: llm-skills.llm-providers/configs/models.yaml
 modes:
   - singlecall
   - stepwise

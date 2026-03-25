@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import os
 import requests
 import openai
 
@@ -76,6 +76,7 @@ class _OpenAIProvider:
         result.message = {"content": choice.message.content}
         result.usage = usage
         return result
+
 
 
 @dataclass
