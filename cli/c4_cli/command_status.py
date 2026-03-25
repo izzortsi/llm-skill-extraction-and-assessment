@@ -1,0 +1,73 @@
+"""
+command_status.py
+
+The "status" command: display pipeline run directory state.
+
+Usage:
+    python -m c4_cli.main status [--run-dir PATH]
+"""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from c0_config.pipeline_profile import PipelineProfile
+from c1_tools.output_inspector import inspect_run_dir
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="llm-skills status",
+        description="Show pipeline run status",
+    )
+    parser.add_argument("--run-dir", type=str, default="",
+                        help="Path to run directory")
+    parser.add_argument("--profile", type=str, default="",
+                        help="Load run-dir from named profile")
+
+    args = parser.parse_args()
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+
+    if args.run_dir:
+        run_dir = Path(args.run_dir)
+    elif args.profile:
+        from c1_tools.profile_loader import load_profile
+        profile = load_profile(args.profile)
+        run_dir = Path(profile.run_dir)
+    else:
+        run_dir = Path(PipelineProfile().run_dir)
+
+    if not run_dir.is_absolute():
+        run_dir = repo_root / run_dir
+
+    if not run_dir.exists():
+        print(f"Run directory does not exist: {run_dir}")
+        print(f"Run the pipeline first: llm-skills run --stages all")
+        return
+
+    print(f"Run directory: {run_dir}")
+    print()
+
+    statuses = inspect_run_dir(run_dir)
+
+    print(f"{'Stage':<6} {'Name':<22} {'Status':<10} {'Output'}")
+    print("-" * 70)
+
+    for s in statuses:
+        if s.is_complete:
+            status_str = "DONE"
+            output_str = ", ".join(s.output_paths)
+        elif len(s.output_paths) > 0:
+            status_str = "PARTIAL"
+            output_str = f"{len(s.output_paths)} of {len(s.output_paths) + len(s.missing_paths)} files"
+        else:
+            status_str = "PENDING"
+            output_str = ""
+
+        print(f"{s.stage_id:<6} {s.name:<22} {status_str:<10} {output_str}")
+
+    done_count = sum(1 for s in statuses if s.is_complete)
+    print()
+    print(f"{done_count} of {len(statuses)} stages complete")
