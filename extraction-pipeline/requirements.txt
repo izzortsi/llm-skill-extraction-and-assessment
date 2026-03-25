@@ -1,0 +1,14 @@
+# Core dependencies
+pyyaml>=6.0
+
+# PDF extraction (Module 1 - optional, only needed for extract-text)
+# marker-pdf>=1.10
+# Markdown>=3.10
+
+# LLM providers (install as needed)
+# openai>=1.0        # For Ollama, vLLM, OpenAI
+# anthropic>=0.20    # For Anthropic/Claude
+litellm>=1.40        # Unified routing to vLLM, Ollama, OpenAI, Anthropic, etc.
+
+# Visualization (optional)
+# matplotlib>=3.7

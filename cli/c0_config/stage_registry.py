@@ -14,7 +14,7 @@ STAGES = [
         stage_id="1a",
         name="extract-passages",
         description="Extract text passages from source documents or datasets",
-        pipeline_dir="llm-skills.text-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["extract-passages"],
         output_dir="stage1-task-extraction",
         output_files=["passages.json"],
@@ -24,7 +24,7 @@ STAGES = [
         stage_id="1b",
         name="extract-tasks",
         description="Generate evaluation tasks from passages using LLM",
-        pipeline_dir="llm-skills.text-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["extract-tasks"],
         output_dir="stage1-task-extraction",
         output_files=["tasks.json"],
@@ -34,7 +34,7 @@ STAGES = [
         stage_id="2",
         name="capture-traces",
         description="Run tasks through LLM to capture reasoning traces",
-        pipeline_dir="llm-skills.task-skill-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["capture-traces"],
         output_dir="stage2-trace-capture",
         output_files=["traces.jsonl"],
@@ -44,7 +44,7 @@ STAGES = [
         stage_id="3",
         name="extract-skills",
         description="Extract procedural skills from reasoning traces",
-        pipeline_dir="llm-skills.task-skill-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["extract-skills"],
         output_dir="stage3-skill-extraction",
         output_files=["skills.json"],
@@ -54,11 +54,21 @@ STAGES = [
         stage_id="4",
         name="verify-skills",
         description="Verify extracted skill quality via rule-based checks",
-        pipeline_dir="llm-skills.task-skill-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["verify-skills"],
         output_dir="stage4-skill-verification",
         output_files=["verified_skills.json"],
         depends_on=["3"],
+    ),
+    PipelineStage(
+        stage_id="4b",
+        name="compose-skills",
+        description="Generate composed skills from verified atomic skills (SkillMix)",
+        pipeline_dir="llm-skills.extraction-pipeline",
+        commands=["compose-skills"],
+        output_dir="stage4b-skill-composition",
+        output_files=[],  # dynamic: composed skill .md files
+        depends_on=["4"],
     ),
     PipelineStage(
         stage_id="5",
@@ -84,7 +94,7 @@ STAGES = [
         stage_id="7",
         name="traceability",
         description="Generate traceability report and CSV exports",
-        pipeline_dir="llm-skills.task-skill-extraction-pipeline",
+        pipeline_dir="llm-skills.extraction-pipeline",
         commands=["traceability-report", "export-csv"],
         output_dir="",  # outputs to run_dir root and run_dir/csv
         output_files=["traceability-report.txt", "csv/skills.csv"],
@@ -130,12 +140,13 @@ def parse_stage_range(range_str: str) -> list:
     """Parse a stage range string into a list of stage IDs.
 
     Accepted formats:
-        "all"          -> ["1a", "1b", "2", "3", "4", "5", "6", "7"]
+        "all"          -> ["1a", "1b", "2", "3", "4", "4b", "5", "6", "7"]
         "1-4"          -> ["1a", "1b", "2", "3", "4"]
+        "1-4b"         -> ["1a", "1b", "2", "3", "4", "4b"]
         "5-7"          -> ["5", "6", "7"]
         "1a,1b,5"      -> ["1a", "1b", "5"]
         "3"            -> ["3"]
-        "extraction"   -> ["1a", "1b", "2", "3", "4"]
+        "extraction"   -> ["1a", "1b", "2", "3", "4", "4b"]
         "evaluation"   -> ["5", "6", "7"]
     """
     range_str = range_str.strip().lower()
@@ -144,7 +155,7 @@ def parse_stage_range(range_str: str) -> list:
         return list(ALL_STAGE_IDS)
 
     if range_str == "extraction":
-        return ["1a", "1b", "2", "3", "4"]
+        return ["1a", "1b", "2", "3", "4", "4b"]
 
     if range_str == "evaluation":
         return ["5", "6", "7"]
