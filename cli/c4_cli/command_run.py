@@ -49,9 +49,9 @@ def main() -> None:
                         help="Suppress stage subprocess output")
     parser.add_argument("--interactive", "-i", action="store_true",
                         help="Build profile interactively before running")
-    parser.add_argument("--claude-code", type=str, nargs="?", const="sonnet",
-                        choices=["opus", "sonnet"],
-                        help="Use Claude Code CLI as LLM provider (opus=claude-opus-4-6, sonnet=claude-sonnet-4-6, default: sonnet)")
+    parser.add_argument("--claude-code", type=str, nargs="?", const="haiku",
+                        choices=["haiku", "sonnet", "opus"],
+                        help="Use Claude Code CLI as LLM provider (haiku=claude-haiku-4-5-20251001, sonnet=claude-sonnet-4-6, opus=claude-opus-4-6, default: haiku)")
 
     args = parser.parse_args()
 
@@ -82,7 +82,7 @@ def main() -> None:
         profile.run_dir = args.run_dir
 
     if args.claude_code:
-        CLAUDE_CODE_MODELS = {"opus": "claude-opus-4-6", "sonnet": "claude-sonnet-4-6"}
+        CLAUDE_CODE_MODELS = {"haiku": "claude-haiku-4-5-20251001", "sonnet": "claude-sonnet-4-6", "opus": "claude-opus-4-6"}
         claude_model = CLAUDE_CODE_MODELS[args.claude_code]
         profile.extraction_provider = "claude-code"
         profile.extraction_model = claude_model

@@ -49,9 +49,9 @@ def test_chat_passes_model_to_cli():
     assert cmd[model_idx + 1] == "claude-opus-4-6"
 
 
-def test_default_model_is_sonnet():
+def test_default_model_is_haiku():
     provider = ClaudeCodeProvider()
-    assert provider.model_name == "claude-sonnet-4-6"
+    assert provider.model_name == "claude-haiku-4-5-20251001"
 
 
 def test_chat_raises_on_nonzero_exit():

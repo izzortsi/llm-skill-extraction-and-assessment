@@ -30,7 +30,7 @@ def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
 class ClaudeCodeProvider:
     """LLM provider that wraps `claude -p --output-format json`."""
 
-    def __init__(self, model: str = "claude-sonnet-4-6"):
+    def __init__(self, model: str = "claude-haiku-4-5-20251001"):
         self.model_name = model
 
     def chat(self, messages):
