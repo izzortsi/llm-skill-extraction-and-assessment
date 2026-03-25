@@ -471,23 +471,27 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
                 default_provider_name = p.name
                 break
 
+    HINT = "(ENTER to confirm default)"
+
     # Step 1: URLs
-    _section(1, "Provider URLs")
+    _section(1, f"Provider URLs  {HINT}")
     profile.lmproxy_base_url = _text_input("lmproxy URL", profile.lmproxy_base_url)
     profile.ollama_url = _text_input("Ollama URL", profile.ollama_url)
+    profile.iosys_base_url = _text_input("iosys URL", profile.iosys_base_url)
+    profile.lm_studio_url = _text_input("LM Studio URL", profile.lm_studio_url)
 
     # Re-probe if URLs changed
     provider_statuses = _reprobe_if_changed(provider_statuses, profile)
 
     # Step 2: Extraction provider + model
-    _section(2, "Extraction Model")
+    _section(2, f"Extraction Model  {HINT}")
     profile.extraction_provider = select_provider("Extraction", provider_statuses, default_provider_name)
     ext_p = _provider_by_name(provider_statuses, profile.extraction_provider)
     ext_default_model = ext_p.models[0] if (ext_p and ext_p.models) else ""
     profile.extraction_model = select_model("Extraction", ext_p, ext_default_model)
 
     # Step 3: Trace provider + model (default: same as extraction)
-    _section(3, "Trace Capture Model")
+    _section(3, f"Trace Capture Model  {HINT}")
     profile.trace_provider = select_provider("Trace", provider_statuses, profile.extraction_provider)
     trace_p = _provider_by_name(provider_statuses, profile.trace_provider)
     trace_default = profile.extraction_model if profile.trace_provider == profile.extraction_provider else ""
@@ -496,7 +500,7 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.trace_model = select_model("Trace", trace_p, trace_default)
 
     # Step 4: Judge provider + model (default: same as trace)
-    _section(4, "Judge Model")
+    _section(4, f"Judge Model  {HINT}")
     profile.judge_provider = select_provider("Judge", provider_statuses, profile.trace_provider)
     judge_p = _provider_by_name(provider_statuses, profile.judge_provider)
     judge_default = profile.trace_model if profile.judge_provider == profile.trace_provider else ""
@@ -505,11 +509,11 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.judge_model = select_model("Judge", judge_p, judge_default)
 
     # Step 5: Eval models (multi-select)
-    _section(5, "Evaluation Models")
+    _section(5, "Evaluation Models  (SPACE to toggle, ENTER to confirm)")
     profile.eval_models = select_eval_models(provider_statuses)
 
     # Step 6: Source data
-    _section(6, "Source Data")
+    _section(6, f"Source Data  {HINT}")
     profile.dataset = _text_input("Dataset (HuggingFace identifier)", profile.dataset)
     profile.subset = _text_input("Subset", profile.subset)
     profile.domain = _text_input("Domain label", profile.domain)
@@ -518,7 +522,7 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.tasks_per_chunk = _int_input("Tasks per chunk", profile.tasks_per_chunk)
 
     # Step 7: Skills config
-    _section(7, "Skills Configuration")
+    _section(7, f"Skills Configuration  {HINT}")
     profile.max_skills = _int_input("Max skills to extract", profile.max_skills)
 
     compose_k_raw = _text_input("Compose k values (comma-separated ints)", ",".join(str(k) for k in profile.compose_k_values))
@@ -536,12 +540,12 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.compose_operators = [s.strip() for s in compose_ops_raw.split(",") if s.strip()]
 
     # Step 8: Modes
-    _section(8, "Evaluation Modes")
+    _section(8, "Evaluation Modes  (SPACE to toggle, ENTER to confirm)")
     all_modes = ["singlecall", "stepwise", "guided"]
     profile.modes = _select_many("Select evaluation modes", all_modes, profile.modes)
 
     # Step 9: Profile name
-    _section(9, "Save")
+    _section(9, f"Save  {HINT}")
     profile.profile_name = _text_input("Profile name", profile.profile_name)
 
     return profile
