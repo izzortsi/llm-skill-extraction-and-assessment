@@ -35,9 +35,10 @@ class ClaudeCodeProvider:
 
     def chat(self, messages):
         prompt = _messages_to_prompt(messages)
-        cmd = ["claude", "-p", prompt, "--output-format", "json", "--model", self.model_name]
+        cmd = ["claude", "-p", "--output-format", "json", "--model", self.model_name]
         result = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=300,
