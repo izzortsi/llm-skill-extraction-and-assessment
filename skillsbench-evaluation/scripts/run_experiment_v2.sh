@@ -94,7 +94,15 @@ print(f'{len(eps)} episodes ({len(bl)} baseline, {len(cu)} curated) | baseline={
 cd "$REPO_ROOT"
 
 # Add module paths to PYTHONPATH
-export PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${REPO_ROOT}/llm-skills.skillmix-evaluation:${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${REPO_ROOT}/llm-skills.llm-providers:${PYTHONPATH:-}"
+# NOTE: c2_extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
+# Python only uses the first match, so we set PYTHONPATH per-phase below.
+BASE_PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${REPO_ROOT}/llm-skills.skillmix-evaluation:${REPO_ROOT}/llm-skills.llm-providers:${PYTHONPATH:-}"
+# Phase 1 (task extraction) needs text-extraction-pipeline
+PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
+# Phases 2-4 (traces, skills, verification) need task-skill-extraction-pipeline
+PYTHONPATH_SKILL="${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
+# Phases 5+ (evaluation) need skillsbench (already in BASE)
+export PYTHONPATH="${PYTHONPATH_SKILL}"
 
 log "Repo root: ${REPO_ROOT}"
 log "Data directory:  ${DATA_DIR}"
@@ -130,7 +138,7 @@ for domain in "${DOMAINS[@]}"; do
         continue
     fi
     log "  [${DOMAIN_IDX}/${#DOMAINS[@]}] Extracting tasks for domain: ${domain}"
-    python -m c2_extraction.task_extractor \
+    PYTHONPATH="${PYTHONPATH_TEXT}" python -m c2_extraction.task_extractor \
         --dataset "${DATASET}" --subset "${SUBSET}" \
         --domain "${domain}" \
         --max-chunks "${MAX_CHUNKS}" --chunk-size "${CHUNK_SIZE}" \
