@@ -44,7 +44,5 @@ max_skills: 8
 compose_k_values:
   - 2
   - 3
-  - 4
-  - 5
 compose_operators:
   - seq
