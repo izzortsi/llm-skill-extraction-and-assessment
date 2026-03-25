@@ -38,6 +38,7 @@ class PipelineProfile:
     lmproxy_base_url: str = "http://localhost:8080/v1"
     iosys_base_url: str = "http://llm.iosys.net/v1"
     lm_studio_url: str = "http://localhost:1234/v1"
+    zai_url: str = "https://open.bigmodel.cn/api/paas/v4"
     eval_models: List[Dict[str, str]] = field(default_factory=lambda: [{"provider": "lmproxy", "model": "qwen2.5-3b"}, {"provider": "lmproxy", "model": "qwen2.5-7b"}])
     modes: List[str] = field(default_factory=lambda: ["singlecall", "stepwise", "guided"])
 

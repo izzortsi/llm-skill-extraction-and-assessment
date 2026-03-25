@@ -18,12 +18,12 @@ from c0_config.pipeline_profile import PipelineProfile
 def _provider_args(provider, model, profile):
     """Translate a profile provider value into CLI args for a stage.
 
-    For providers that need a base_url (lmproxy, ollama, iosys, lm-studio), we pass
+    For providers that need a base_url (lmproxy, ollama, iosys, lm-studio, zai), we pass
     --provider openai --model <model> and rely on OPENAI_BASE_URL env var
     (set by provider_env()) rather than --base-url, because not all stages
     accept --base-url as a CLI flag.
     """
-    if provider in ("lmproxy", "ollama", "iosys", "lm-studio"):
+    if provider in ("lmproxy", "ollama", "iosys", "lm-studio", "zai"):
         return ["--provider", "openai", "--model", model]
     if provider == "claude-code":
         return ["--provider", "claude-code", "--model", model]
@@ -49,6 +49,13 @@ def provider_env(provider, profile):
         return env
     if provider == "lm-studio":
         return {"OPENAI_BASE_URL": profile.lm_studio_url}
+    if provider == "zai":
+        env = {"OPENAI_BASE_URL": profile.zai_url}
+        import os
+        zai_key = os.environ.get("ZHIPU_API_KEY", "")
+        if zai_key:
+            env["OPENAI_API_KEY"] = zai_key
+        return env
     return {}
 
 
