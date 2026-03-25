@@ -37,6 +37,17 @@ def load_profile(name: str) -> PipelineProfile:
         if hasattr(profile, key):
             setattr(profile, key, value)
     profile.profile_name = name
+
+    # Normalize eval_models: old profiles store plain strings
+    if hasattr(profile, "eval_models") and profile.eval_models:
+        normalized = []
+        for entry in profile.eval_models:
+            if isinstance(entry, str):
+                normalized.append({"provider": "ollama", "model": entry})
+            else:
+                normalized.append(entry)
+        profile.eval_models = normalized
+
     return profile
 
 
