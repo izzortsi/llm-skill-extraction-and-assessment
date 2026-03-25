@@ -107,7 +107,7 @@ STAGES = [
         pipeline_dir="llm-skills.skillmix-evaluation",
         commands=["run-skillmix", "report"],
         output_dir="stage8-skillmix-evaluation",
-        output_files=["episodes.json", "summary.json"],
+        output_files=["episodes.json", "summary.json", "report.txt"],
         depends_on=["1b", "4b"],
     ),
     PipelineStage(

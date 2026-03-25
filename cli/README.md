@@ -29,7 +29,8 @@ execute pipeline stages with profile-based configuration.
 python3 -m c4_cli.main run [options]
 
 options:
-  --stages RANGE       all, 1-4, 5-8, extraction, evaluation, skillsbench, skillmix, 1a,3,5
+  --stages RANGE       all, 1-4, 5-9, extraction, evaluation, skillsbench, skillmix, 1a,3,5
+  --clean-stages       wipe only the requested stages' output (not the whole run dir)
   --profile NAME       named profile from profiles/ directory
   --minimal            1 chunk, 2 tasks/chunk, 2 skills, k=2, singlecall, 2 models
   --clean              wipe previous output and re-run from scratch
@@ -102,7 +103,7 @@ python3 -m c4_cli.main setup --profile my-experiment
 the `--stages` flag accepts these formats:
 
 ```
-all           all 11 stages (1a, 1b, 2, 3, 4, 4b, 5, 6, 7, 8)
+all           all 11 stages (1a, 1b, 2, 3, 4, 4b, 5, 6, 7, 8, 9)
 extraction    stages 1a through 4b (text + skill extraction + composition)
 evaluation    stages 5 through 9 (eval + viz + traceability + skillmix)
 skillsbench   stages 5-6 (skillsbench eval + visualization)

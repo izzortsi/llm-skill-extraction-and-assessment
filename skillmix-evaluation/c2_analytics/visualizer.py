@@ -241,9 +241,10 @@ def generate_uplift_heatmap(
     for sk in skills:
         op, k = _parse_skill_name(sk)
         if op == "atomic":
-            label = sk[:30]
+            label = sk[:35]
         else:
-            label = f"[{op} k={k}] {sk[len(op)+1:30]}"
+            body = sk[len(op) + 1:]
+            label = f"[{op} k={k}] {body[:25]}"
         labels.append(label)
 
     vmax = max(abs(data.min()), abs(data.max()), 0.05)
@@ -463,7 +464,8 @@ def generate_all(
     for filename, gen_fn in charts:
         path = output_dir / filename
         gen_fn(path)
-        generated.append(str(path))
+        if path.exists():
+            generated.append(str(path))
 
     return generated
 

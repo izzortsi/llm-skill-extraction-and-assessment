@@ -555,5 +555,9 @@ def _execute_stage8(stage, profile, run_dir, repo_root, pipeline_dir,
     report_result.stage_id = "8"
     results.append(report_result)
 
+    if report_result.exit_code != 0:
+        ui_stage_fail("8", report_result.exit_code, report_result.log_path)
+        return results
+
     ui_stage_complete("8", result.duration_seconds + report_result.duration_seconds)
     return results

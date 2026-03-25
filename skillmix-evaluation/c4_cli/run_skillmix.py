@@ -25,7 +25,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         help="Run SkillMix benchmark (multi-model, LLM-as-judge)",
     )
     parser.add_argument("--tasks", type=Path, required=True, help="Path to tasks JSON")
-    parser.add_argument("--skills-dir", type=Path, help="Directory with composed skill .md files")
+    parser.add_argument("--skills-dir", type=Path, help="Directory with skill .md files (recursive)")
     parser.add_argument("--atomic-dir", type=Path, help="Directory with atomic skill .md files")
     parser.add_argument("--models", type=str, required=True, help="Comma-separated model aliases")
     parser.add_argument("--config", type=Path, help="Path to models.yaml config (resolves aliases to providers)")
@@ -57,7 +57,11 @@ def run(args: argparse.Namespace) -> None:
     # Build model configs
     model_aliases = [m.strip() for m in args.models.split(",") if m.strip()]
 
-    if args.config and args.config.exists():
+    if args.config:
+        if not args.config.exists():
+            print(f"ERROR: config file not found: {args.config}")
+            return
+
         from c1_providers.model_config import load_model_config
         config = load_model_config(str(args.config))
 
@@ -78,8 +82,10 @@ def run(args: argparse.Namespace) -> None:
                 "alias": alias,
             })
 
-        # Create judge from config if available
-        judge_entry = config.get_judge_entry()
+        # Create judge from config if judge section exists
+        judge_entry = None
+        if config.judge_model_name:
+            judge_entry = config.get_judge_entry()
         if judge_entry:
             judge_provider = create_provider(
                 judge_entry.provider, judge_entry.litellm_model,

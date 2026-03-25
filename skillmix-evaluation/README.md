@@ -35,7 +35,7 @@ python -m c4_cli.main visualize    --help  # generate charts (stage 9)
 # run evaluation with config-driven model routing
 python -m c4_cli.main run-skillmix \
     --tasks ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
-    --skills-dir ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage4b-skill-composition/atomic-skills-md \
+    --skills-dir ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage4b-skill-composition \
     --models qwen2.5-3b,qwen2.5-7b \
     --config ../llm-skills.llm-providers/configs/models.yaml \
     --output-dir results/ -v
