@@ -22,7 +22,7 @@ def _provider_args(provider, model, profile):
     if provider == "ollama":
         return ["--provider", "openai", "--base-url", profile.ollama_url, "--model", model]
     if provider == "claude-code":
-        return ["--provider", "claude-code", "--model", "claude-code"]
+        return ["--provider", "claude-code", "--model", model]
     return ["--provider", provider, "--model", model]
 
 

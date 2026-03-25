@@ -30,12 +30,14 @@ def _messages_to_prompt(messages: List[Dict[str, str]]) -> str:
 class ClaudeCodeProvider:
     """LLM provider that wraps `claude -p --output-format json`."""
 
-    model_name = "claude-code"
+    def __init__(self, model: str = "claude-sonnet-4-6"):
+        self.model_name = model
 
     def chat(self, messages):
         prompt = _messages_to_prompt(messages)
+        cmd = ["claude", "-p", prompt, "--output-format", "json", "--model", self.model_name]
         result = subprocess.run(
-            ["claude", "-p", prompt, "--output-format", "json"],
+            cmd,
             capture_output=True,
             text=True,
             timeout=300,

@@ -36,6 +36,24 @@ def test_chat_returns_content():
     assert result.message["content"] == "The answer is 4."
 
 
+def test_chat_passes_model_to_cli():
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = json.dumps({"result": "ok"})
+    with patch("c1_tools.claude_code_provider.subprocess.run", return_value=mock_result) as mock_run:
+        provider = ClaudeCodeProvider(model="claude-opus-4-6")
+        provider.chat([{"role": "user", "content": "test"}])
+    cmd = mock_run.call_args[0][0]
+    assert "--model" in cmd
+    model_idx = cmd.index("--model")
+    assert cmd[model_idx + 1] == "claude-opus-4-6"
+
+
+def test_default_model_is_sonnet():
+    provider = ClaudeCodeProvider()
+    assert provider.model_name == "claude-sonnet-4-6"
+
+
 def test_chat_raises_on_nonzero_exit():
     mock_result = MagicMock()
     mock_result.returncode = 1

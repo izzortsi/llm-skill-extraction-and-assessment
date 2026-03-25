@@ -243,6 +243,6 @@ def create_provider(
         if str(cli_root) not in sys.path:
             sys.path.insert(0, str(cli_root))
         from c1_tools.claude_code_provider import ClaudeCodeProvider
-        return ClaudeCodeProvider()
+        return ClaudeCodeProvider(model=model)
 
     raise ValueError(f"Unknown provider: {provider_name}")

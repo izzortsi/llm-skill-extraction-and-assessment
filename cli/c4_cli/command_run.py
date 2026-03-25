@@ -49,8 +49,9 @@ def main() -> None:
                         help="Suppress stage subprocess output")
     parser.add_argument("--interactive", "-i", action="store_true",
                         help="Build profile interactively before running")
-    parser.add_argument("--claude-code", action="store_true",
-                        help="Use Claude Code CLI as LLM provider for all roles (zero-setup mode)")
+    parser.add_argument("--claude-code", type=str, nargs="?", const="sonnet",
+                        choices=["opus", "sonnet"],
+                        help="Use Claude Code CLI as LLM provider (opus=claude-opus-4-6, sonnet=claude-sonnet-4-6, default: sonnet)")
 
     args = parser.parse_args()
 
@@ -81,13 +82,15 @@ def main() -> None:
         profile.run_dir = args.run_dir
 
     if args.claude_code:
+        CLAUDE_CODE_MODELS = {"opus": "claude-opus-4-6", "sonnet": "claude-sonnet-4-6"}
+        claude_model = CLAUDE_CODE_MODELS[args.claude_code]
         profile.extraction_provider = "claude-code"
-        profile.extraction_model = "claude-code"
+        profile.extraction_model = claude_model
         profile.trace_provider = "claude-code"
-        profile.trace_model = "claude-code"
+        profile.trace_model = claude_model
         profile.judge_provider = "claude-code"
-        profile.judge_model = "claude-code"
-        profile.eval_models = [{"provider": "claude-code", "model": "claude-code"}]
+        profile.judge_model = claude_model
+        profile.eval_models = [{"provider": "claude-code", "model": claude_model}]
 
     verbose = not args.quiet
 
