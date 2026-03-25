@@ -70,7 +70,7 @@ def print_header(profile_name: str, stages: str, run_dir: str,
         lines.append(f"[bold]stages:[/bold]   {stages}")
         lines.append(f"[bold]run_dir:[/bold]  {run_dir}")
         if is_minimal:
-            lines.append("[yellow]mode:     MINIMAL (1 chunk, 1 task/chunk, 3 skills, singlecall, 1 model)[/yellow]")
+            lines.append("[yellow]mode:     MINIMAL (1 chunk, 2 tasks/chunk, 2 skills, k=2, singlecall, 2 models)[/yellow]")
         if is_clean:
             lines.append("[red]clean:    wiping previous output[/red]")
         content = "\n".join(lines)
