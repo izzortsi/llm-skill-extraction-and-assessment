@@ -60,8 +60,11 @@ def run(args: argparse.Namespace) -> None:
         for m in model_names
     ]
 
-    # Create judge
-    judge_provider = create_provider(args.judge_provider, args.judge_model)
+    # Create judge (uses same lmproxy session as the runner)
+    from c3_skillmix.runner import _OpenAIProvider, _ensure_lmproxy_session, _create_lmproxy_client
+    worker_id = _ensure_lmproxy_session("skillmix-judge")
+    judge_client = _create_lmproxy_client(worker_id)
+    judge_provider = _OpenAIProvider(judge_client, args.judge_model)
     judge = LLMJudgeEvaluator(judge_provider)
 
     # Run
