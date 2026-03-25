@@ -48,8 +48,18 @@ def main() -> None:
 
     elif args.subcommand == "create":
         if args.interactive:
+            from pathlib import Path
             from c4_cli.interactive import build_profile_interactive
-            profile = build_profile_interactive()
+            from c1_tools.provider_discovery import discover_providers
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            profile = PipelineProfile()
+            cfg_path = repo_root / profile.config_file
+            providers = discover_providers(
+                lmproxy_url=profile.lmproxy_base_url,
+                ollama_url=profile.ollama_url,
+                config_file=str(cfg_path) if cfg_path.exists() else "",
+            )
+            profile = build_profile_interactive(providers)
             if args.name:
                 profile.profile_name = args.name
             path = save_profile(profile)

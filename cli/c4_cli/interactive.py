@@ -1,210 +1,547 @@
 """
 interactive.py
 
-Interactive prompts for the llm-skills CLI. Uses Rich prompts when
-available, falls back to plain input() otherwise.
+Interactive prompts for the llm-skills CLI. Uses InquirerPy when available
+for rich list/checkbox selection, Rich for styled text, and falls back to
+plain input() when neither is installed.
 
 Functions:
-    prompt_provider     -- select LLM provider
-    prompt_model        -- select model for a provider
-    prompt_dataset      -- select data source
-    prompt_modes        -- select evaluation scaffolding modes
-    prompt_stages       -- select stage range
-    prompt_confirm      -- yes/no confirmation
-    prompt_profile_name -- name for a new profile
-    build_profile_interactive -- full interactive profile builder
+    build_profile_interactive -- full interactive profile builder (takes provider_statuses)
 """
 
 from __future__ import annotations
 
-from typing import List
+from typing import Dict, List
 
 from c0_config.pipeline_profile import PipelineProfile
 
+# ---------------------------------------------------------------------------
+# Optional dependency detection
+# ---------------------------------------------------------------------------
+
 try:
     from rich.console import Console
-    from rich.prompt import Prompt, Confirm, IntPrompt
     from rich.panel import Panel
     _console = Console()
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
 
+try:
+    from InquirerPy import inquirer
+    from InquirerPy.base.control import Choice
+    HAS_INQUIRER = True
+except ImportError:
+    HAS_INQUIRER = False
 
-def _ask(question: str, default: str = "") -> str:
+    # Minimal Choice stub so isinstance() checks work in fallback paths
+    class Choice:
+        def __init__(self, value="", name="", enabled=True):
+            self.value = value
+            self.name = name
+            self.enabled = enabled
+
+
+# ---------------------------------------------------------------------------
+# Primitive input helpers
+# ---------------------------------------------------------------------------
+
+def _print(text: str) -> None:
+    """Print text, using Rich console when available."""
     if HAS_RICH:
-        return Prompt.ask(question, default=default, console=_console)
+        _console.print(text)
     else:
-        suffix = f" [{default}]" if default else ""
-        return input(f"{question}{suffix}: ").strip() or default
+        print(text)
 
 
-def _ask_int(question: str, default: int = 0) -> int:
+def _section(number: int, title: str) -> None:
+    """Print a numbered section header."""
     if HAS_RICH:
-        return IntPrompt.ask(question, default=default, console=_console)
+        _console.print(f"\n[bold cyan]{number}. {title}[/bold cyan]")
     else:
-        raw = input(f"{question} [{default}]: ").strip()
-        return int(raw) if raw else default
+        print(f"\n{number}. {title}")
 
 
-def _confirm(question: str, default: bool = True) -> bool:
-    if HAS_RICH:
-        return Confirm.ask(question, default=default, console=_console)
-    else:
-        suffix = " [Y/n]" if default else " [y/N]"
-        raw = input(f"{question}{suffix}: ").strip().lower()
-        if not raw:
-            return default
-        return raw in ("y", "yes")
+def _select_one(message: str, choices: list, default: str = "") -> str:
+    """Single select -- InquirerPy list or numbered input()."""
+    if HAS_INQUIRER:
+        result = inquirer.select(
+            message=message,
+            choices=choices,
+            default=default if default else None,
+        ).execute()
+        return result
+
+    # Fallback: numbered list
+    print(f"\n  {message}")
+    valid_indices = []
+    for i, ch in enumerate(choices):
+        if isinstance(ch, Choice):
+            if ch.enabled is False:
+                print(f"    {i + 1}. {ch.name}  (disabled)")
+            else:
+                print(f"    {i + 1}. {ch.name}")
+                valid_indices.append(i)
+        else:
+            print(f"    {i + 1}. {ch}")
+            valid_indices.append(i)
+
+    default_display = ""
+    if default:
+        for i, ch in enumerate(choices):
+            val = ch.value if isinstance(ch, Choice) else ch
+            if val == default:
+                default_display = str(i + 1)
+                break
+
+    while True:
+        raw = input(f"  Enter number [{default_display}]: ").strip()
+        if not raw and default_display:
+            idx = int(default_display) - 1
+            ch = choices[idx]
+            return ch.value if isinstance(ch, Choice) else ch
+        try:
+            idx = int(raw) - 1
+            if idx in valid_indices:
+                ch = choices[idx]
+                return ch.value if isinstance(ch, Choice) else ch
+        except (ValueError, IndexError):
+            pass
+        print("  Invalid choice, try again.")
 
 
-def _choose(question: str, choices: List[str], default: str = "") -> str:
-    if HAS_RICH:
-        choices_str = ", ".join(choices)
-        _console.print(f"  Options: [cyan]{choices_str}[/cyan]")
-        return Prompt.ask(question, default=default, console=_console)
-    else:
-        print(f"  Options: {', '.join(choices)}")
-        return input(f"{question} [{default}]: ").strip() or default
-
-
-def _multi_choose(question: str, choices: List[str], defaults: List[str] = None) -> List[str]:
+def _select_many(message: str, choices: list, defaults: list = None) -> list:
+    """Multi select -- InquirerPy checkbox or comma-separated input()."""
     if defaults is None:
         defaults = []
-    defaults_str = ",".join(defaults)
 
+    if HAS_INQUIRER:
+        # Mark defaults as enabled
+        iq_choices = []
+        for ch in choices:
+            if isinstance(ch, Choice):
+                val = ch.value
+                ch.enabled = val in defaults
+                iq_choices.append(ch)
+            else:
+                iq_choices.append(Choice(value=ch, name=ch, enabled=(ch in defaults)))
+
+        result = inquirer.checkbox(
+            message=message,
+            choices=iq_choices,
+        ).execute()
+        return result
+
+    # Fallback: numbered list with comma-separated selection
+    print(f"\n  {message}")
+    for i, ch in enumerate(choices):
+        name = ch.name if isinstance(ch, Choice) else ch
+        val = ch.value if isinstance(ch, Choice) else ch
+        marker = "*" if val in defaults else " "
+        print(f"    {i + 1}. [{marker}] {name}")
+
+    default_indices = []
+    for d in defaults:
+        for i, ch in enumerate(choices):
+            val = ch.value if isinstance(ch, Choice) else ch
+            if val == d:
+                default_indices.append(str(i + 1))
+                break
+    default_display = ",".join(default_indices)
+
+    raw = input(f"  Enter numbers (comma-separated) [{default_display}]: ").strip()
+    if not raw:
+        return list(defaults)
+    selected = []
+    for part in raw.split(","):
+        part = part.strip()
+        try:
+            idx = int(part) - 1
+            if 0 <= idx < len(choices):
+                ch = choices[idx]
+                selected.append(ch.value if isinstance(ch, Choice) else ch)
+        except (ValueError, IndexError):
+            pass
+    return selected
+
+
+def _text_input(message: str, default: str = "") -> str:
+    """Text input with default."""
+    if HAS_INQUIRER:
+        return inquirer.text(message=message, default=default).execute()
+    suffix = f" [{default}]" if default else ""
+    return input(f"  {message}{suffix}: ").strip() or default
+
+
+def _int_input(message: str, default: int = 0) -> int:
+    """Integer input with default."""
+    if HAS_INQUIRER:
+        raw = inquirer.text(message=message, default=str(default)).execute()
+        try:
+            return int(raw)
+        except ValueError:
+            return default
+    raw = input(f"  {message} [{default}]: ").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _confirm(message: str, default: bool = True) -> bool:
+    """Yes/no confirmation."""
+    if HAS_INQUIRER:
+        return inquirer.confirm(message=message, default=default).execute()
+    suffix = " [Y/n]" if default else " [y/N]"
+    raw = input(f"  {message}{suffix}: ").strip().lower()
+    if not raw:
+        return default
+    return raw in ("y", "yes")
+
+
+# ---------------------------------------------------------------------------
+# Discovery display
+# ---------------------------------------------------------------------------
+
+def _display_discovery_summary(providers: list) -> None:
+    """Print a summary of discovered providers."""
     if HAS_RICH:
-        choices_str = ", ".join(choices)
-        _console.print(f"  Options: [cyan]{choices_str}[/cyan]")
-        raw = Prompt.ask(f"{question} (comma-separated)", default=defaults_str, console=_console)
+        _console.print(Panel("[bold]Provider Discovery[/bold]", border_style="cyan"))
     else:
-        print(f"  Options: {', '.join(choices)}")
-        raw = input(f"{question} (comma-separated) [{defaults_str}]: ").strip() or defaults_str
+        print("\n=== Provider Discovery ===")
 
-    return [s.strip() for s in raw.split(",") if s.strip()]
+    for p in providers:
+        status_icon = "OK" if p.reachable else "--"
+        line = f"  [{status_icon}] {p.name}: {p.message}"
+        if HAS_RICH:
+            color = "green" if p.reachable else "red"
+            _console.print(f"  [{color}]{status_icon}[/{color}] {p.name}: {p.message}")
+        else:
+            print(line)
 
 
 # ---------------------------------------------------------------------------
-# High-level prompts
+# Provider and model selection helpers
 # ---------------------------------------------------------------------------
 
-def prompt_provider(label: str, default: str = "anthropic") -> str:
-    return _choose(f"{label} provider", ["anthropic", "openai", "ollama"], default)
+def _provider_by_name(providers: list, name: str):
+    """Find a ProviderStatus by name, or None."""
+    for p in providers:
+        if p.name == name:
+            return p
+    return None
 
 
-def prompt_model(label: str, provider: str, default: str = "claude-opus-4-6") -> str:
-    if provider == "anthropic":
-        choices = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
-    elif provider in ("openai", "ollama"):
-        choices = ["qwen2.5:3b", "qwen2.5:7b", "qwen3:0.6b", "llama3.2:1b", "glm-5-turbo"]
-    else:
-        choices = [default]
-    return _choose(f"{label} model", choices, default)
+def select_provider(role_label: str, providers: list, default_provider: str = "") -> str:
+    """Select provider for a role. Unreachable shown dimmed/disabled."""
+    if HAS_INQUIRER:
+        iq_choices = []
+        for p in providers:
+            suffix = "" if p.reachable else " (unreachable)"
+            iq_choices.append(Choice(
+                value=p.name,
+                name=f"{p.name}{suffix}",
+                enabled=p.reachable if not p.reachable else True,
+            ))
+            # InquirerPy uses 'enabled' to disable checkbox items;
+            # for select (list) we need the 'disabled' key instead
+        # Rebuild with disabled for list prompt
+        iq_choices = []
+        for p in providers:
+            if p.reachable:
+                iq_choices.append(Choice(value=p.name, name=p.name))
+            else:
+                iq_choices.append(Choice(value=p.name, name=f"{p.name} (unreachable)", enabled=False))
+
+        result = inquirer.select(
+            message=f"{role_label} provider",
+            choices=iq_choices,
+            default=default_provider if default_provider else None,
+        ).execute()
+        return result
+
+    # Fallback
+    print(f"\n  {role_label} provider")
+    valid_indices = []
+    for i, p in enumerate(providers):
+        if p.reachable:
+            print(f"    {i + 1}. {p.name}")
+            valid_indices.append(i)
+        else:
+            print(f"    {i + 1}. {p.name} (unreachable)")
+
+    default_display = ""
+    if default_provider:
+        for i, p in enumerate(providers):
+            if p.name == default_provider:
+                default_display = str(i + 1)
+                break
+
+    while True:
+        raw = input(f"  Enter number [{default_display}]: ").strip()
+        if not raw and default_display:
+            idx = int(default_display) - 1
+            return providers[idx].name
+        try:
+            idx = int(raw) - 1
+            if idx in valid_indices:
+                return providers[idx].name
+        except (ValueError, IndexError):
+            pass
+        print("  Invalid choice (provider unreachable or out of range).")
 
 
-def prompt_dataset() -> tuple:
-    dataset = _ask("Dataset (HuggingFace identifier)", "wikimedia/wikipedia")
-    subset = _ask("Subset", "20231101.en")
-    domain = _ask("Domain label", "language-skills")
-    return dataset, subset, domain
+def select_model(role_label: str, provider_status, default_model: str = "") -> str:
+    """Select one model from a provider's model list + custom option."""
+    CUSTOM_SENTINEL = "__custom__"
+    models = list(provider_status.models) if provider_status.models else []
+    choices = models + ["[ enter custom model name ]"]
+    choice_values = models + [CUSTOM_SENTINEL]
+
+    if HAS_INQUIRER:
+        iq_choices = []
+        for m, v in zip(choices, choice_values):
+            iq_choices.append(Choice(value=v, name=m))
+
+        result = inquirer.select(
+            message=f"{role_label} model ({provider_status.name})",
+            choices=iq_choices,
+            default=default_model if default_model in models else None,
+        ).execute()
+
+        if result == CUSTOM_SENTINEL:
+            return _text_input(f"Custom model name for {role_label}")
+        return result
+
+    # Fallback
+    print(f"\n  {role_label} model ({provider_status.name})")
+    for i, name in enumerate(choices):
+        print(f"    {i + 1}. {name}")
+
+    default_display = ""
+    if default_model and default_model in models:
+        default_display = str(models.index(default_model) + 1)
+
+    while True:
+        raw = input(f"  Enter number [{default_display}]: ").strip()
+        if not raw and default_display:
+            return models[int(default_display) - 1]
+        try:
+            idx = int(raw) - 1
+            if 0 <= idx < len(choice_values):
+                val = choice_values[idx]
+                if val == CUSTOM_SENTINEL:
+                    return _text_input(f"Custom model name for {role_label}")
+                return val
+        except (ValueError, IndexError):
+            pass
+        print("  Invalid choice, try again.")
 
 
-def prompt_modes() -> List[str]:
-    return _multi_choose(
-        "Evaluation modes",
-        ["singlecall", "stepwise", "guided"],
-        ["singlecall", "stepwise", "guided"],
+def select_eval_models(providers: list) -> List[Dict[str, str]]:
+    """Multi-select eval models from all reachable providers."""
+    choices = []
+    choice_data = []  # parallel list of dicts
+
+    for p in providers:
+        if not p.reachable or not p.models:
+            continue
+        for m in p.models:
+            label = f"{p.name}/{m}"
+            entry = {"provider": p.name, "model": m}
+            # Store canonical litellm_model for ollama
+            if p.name == "ollama":
+                entry["litellm_model"] = f"openai/{m}"
+            elif p.name == "lmproxy":
+                entry["litellm_model"] = m
+            choices.append(label)
+            choice_data.append(entry)
+
+    if not choices:
+        _print("  No models discovered. Enter models manually.")
+        raw = _text_input("Eval models (comma-separated provider/model)")
+        result = []
+        for part in raw.split(","):
+            part = part.strip()
+            if "/" in part:
+                prov, model = part.split("/", 1)
+                result.append({"provider": prov, "model": model})
+            elif part:
+                result.append({"provider": "lmproxy", "model": part})
+        return result
+
+    if HAS_INQUIRER:
+        iq_choices = []
+        for label, data in zip(choices, choice_data):
+            iq_choices.append(Choice(value=label, name=label))
+
+        selected_labels = inquirer.checkbox(
+            message="Eval models (space to toggle, enter to confirm)",
+            choices=iq_choices,
+        ).execute()
+
+        result = []
+        for label in selected_labels:
+            idx = choices.index(label)
+            result.append(choice_data[idx])
+        return result
+
+    # Fallback
+    print("\n  Eval models (select from discovered models)")
+    for i, label in enumerate(choices):
+        print(f"    {i + 1}. {label}")
+
+    raw = input("  Enter numbers (comma-separated): ").strip()
+    if not raw:
+        return []
+    result = []
+    for part in raw.split(","):
+        part = part.strip()
+        try:
+            idx = int(part) - 1
+            if 0 <= idx < len(choice_data):
+                result.append(choice_data[idx])
+        except (ValueError, IndexError):
+            pass
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Re-probe helper
+# ---------------------------------------------------------------------------
+
+def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
+    """Re-run discovery if the user changed lmproxy or ollama URLs."""
+    from c1_tools.provider_discovery import discover_providers
+    from pathlib import Path
+
+    lmproxy_p = _provider_by_name(providers, "lmproxy")
+    ollama_p = _provider_by_name(providers, "ollama")
+
+    old_lmproxy = lmproxy_p.base_url if lmproxy_p else ""
+    old_ollama = ollama_p.base_url if ollama_p else ""
+
+    changed = False
+    if profile.lmproxy_base_url != old_lmproxy:
+        changed = True
+    if profile.ollama_url != old_ollama:
+        changed = True
+
+    if not changed:
+        return providers
+
+    _print("  URLs changed, re-probing providers...")
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    cfg_path = repo_root / profile.config_file
+    new_providers = discover_providers(
+        lmproxy_url=profile.lmproxy_base_url,
+        ollama_url=profile.ollama_url,
+        config_file=str(cfg_path) if cfg_path.exists() else "",
     )
-
-
-def prompt_stages() -> str:
-    return _choose(
-        "Stage range",
-        ["all", "extraction (1-4)", "evaluation (5-7)", "1a", "1-4", "5-7"],
-        "all",
-    )
-
-
-def prompt_confirm(message: str, default: bool = True) -> bool:
-    return _confirm(message, default)
-
-
-def prompt_profile_name() -> str:
-    return _ask("Profile name", "default")
+    _display_discovery_summary(new_providers)
+    return new_providers
 
 
 # ---------------------------------------------------------------------------
 # Full interactive profile builder
 # ---------------------------------------------------------------------------
 
-def build_profile_interactive() -> PipelineProfile:
+def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     """Walk the user through building a complete pipeline profile."""
     if HAS_RICH:
         _console.print(Panel("[bold]Pipeline Configuration[/bold]", border_style="cyan"))
     else:
-        print("\n=== Pipeline Configuration ===\n")
+        print("\n=== Pipeline Configuration ===")
+
+    # Step 0: discovery summary
+    _display_discovery_summary(provider_statuses)
 
     profile = PipelineProfile()
 
-    # source data
-    if HAS_RICH:
-        _console.print("\n[bold cyan]1. Source Data[/bold cyan]")
+    # Determine defaults: lmproxy if reachable, else first reachable provider
+    lmproxy_p = _provider_by_name(provider_statuses, "lmproxy")
+    default_provider_name = ""
+    if lmproxy_p and lmproxy_p.reachable:
+        default_provider_name = "lmproxy"
     else:
-        print("\n1. Source Data")
+        for p in provider_statuses:
+            if p.reachable:
+                default_provider_name = p.name
+                break
 
-    profile.dataset, profile.subset, profile.domain = prompt_dataset()
-    profile.max_chunks = _ask_int("Max chunks", 5)
-    profile.chunk_size = _ask_int("Chunk size (chars)", 4000)
-    profile.tasks_per_chunk = _ask_int("Tasks per chunk", 2)
+    # Step 1: URLs
+    _section(1, "Provider URLs")
+    profile.lmproxy_base_url = _text_input("lmproxy URL", profile.lmproxy_base_url)
+    profile.ollama_url = _text_input("Ollama URL", profile.ollama_url)
 
-    # extraction model
-    if HAS_RICH:
-        _console.print("\n[bold cyan]2. Extraction Model[/bold cyan]")
-    else:
-        print("\n2. Extraction Model")
+    # Re-probe if URLs changed
+    provider_statuses = _reprobe_if_changed(provider_statuses, profile)
 
-    profile.extraction_provider = prompt_provider("Extraction", "anthropic")
-    profile.extraction_model = prompt_model("Extraction", profile.extraction_provider, "claude-opus-4-6")
-    profile.max_skills = _ask_int("Max skills to extract", 8)
+    # Step 2: Extraction provider + model
+    _section(2, "Extraction Model")
+    profile.extraction_provider = select_provider("Extraction", provider_statuses, default_provider_name)
+    ext_p = _provider_by_name(provider_statuses, profile.extraction_provider)
+    ext_default_model = ext_p.models[0] if (ext_p and ext_p.models) else ""
+    profile.extraction_model = select_model("Extraction", ext_p, ext_default_model)
 
-    # trace capture
-    if HAS_RICH:
-        _console.print("\n[bold cyan]3. Trace Capture[/bold cyan]")
-    else:
-        print("\n3. Trace Capture")
+    # Step 3: Trace provider + model (default: same as extraction)
+    _section(3, "Trace Capture Model")
+    profile.trace_provider = select_provider("Trace", provider_statuses, profile.extraction_provider)
+    trace_p = _provider_by_name(provider_statuses, profile.trace_provider)
+    trace_default = profile.extraction_model if profile.trace_provider == profile.extraction_provider else ""
+    if not trace_default and trace_p and trace_p.models:
+        trace_default = trace_p.models[0]
+    profile.trace_model = select_model("Trace", trace_p, trace_default)
 
-    use_same = _confirm("Use same provider/model for trace capture?", True)
-    if use_same:
-        profile.trace_provider = profile.extraction_provider
-        profile.trace_model = profile.extraction_model
-    else:
-        profile.trace_provider = prompt_provider("Trace", "anthropic")
-        profile.trace_model = prompt_model("Trace", profile.trace_provider, "claude-opus-4-6")
+    # Step 4: Judge provider + model (default: same as trace)
+    _section(4, "Judge Model")
+    profile.judge_provider = select_provider("Judge", provider_statuses, profile.trace_provider)
+    judge_p = _provider_by_name(provider_statuses, profile.judge_provider)
+    judge_default = profile.trace_model if profile.judge_provider == profile.trace_provider else ""
+    if not judge_default and judge_p and judge_p.models:
+        judge_default = judge_p.models[0]
+    profile.judge_model = select_model("Judge", judge_p, judge_default)
 
-    # evaluation
-    if HAS_RICH:
-        _console.print("\n[bold cyan]4. Evaluation[/bold cyan]")
-    else:
-        print("\n4. Evaluation")
+    # Step 5: Eval models (multi-select)
+    _section(5, "Evaluation Models")
+    profile.eval_models = select_eval_models(provider_statuses)
 
-    profile.modes = prompt_modes()
-    profile.ollama_url = _ask("Ollama URL", "http://localhost:11434/v1")
+    # Step 6: Source data
+    _section(6, "Source Data")
+    profile.dataset = _text_input("Dataset (HuggingFace identifier)", profile.dataset)
+    profile.subset = _text_input("Subset", profile.subset)
+    profile.domain = _text_input("Domain label", profile.domain)
+    profile.max_chunks = _int_input("Max chunks", profile.max_chunks)
+    profile.chunk_size = _int_input("Chunk size (chars)", profile.chunk_size)
+    profile.tasks_per_chunk = _int_input("Tasks per chunk", profile.tasks_per_chunk)
 
-    # judge
-    if HAS_RICH:
-        _console.print("\n[bold cyan]5. Judge[/bold cyan]")
-    else:
-        print("\n5. Judge")
+    # Step 7: Skills config
+    _section(7, "Skills Configuration")
+    profile.max_skills = _int_input("Max skills to extract", profile.max_skills)
 
-    profile.judge_provider = prompt_provider("Judge", "anthropic")
-    profile.judge_model = prompt_model("Judge", profile.judge_provider, "claude-opus-4-6")
+    compose_k_raw = _text_input("Compose k values (comma-separated ints)", ",".join(str(k) for k in profile.compose_k_values))
+    parsed_k = []
+    for part in compose_k_raw.split(","):
+        part = part.strip()
+        if part:
+            try:
+                parsed_k.append(int(part))
+            except ValueError:
+                pass
+    profile.compose_k_values = parsed_k if parsed_k else [2, 3]
 
-    # profile name
-    if HAS_RICH:
-        _console.print("\n[bold cyan]6. Save[/bold cyan]")
-    else:
-        print("\n6. Save")
+    compose_ops_raw = _text_input("Compose operators (comma-separated)", ",".join(profile.compose_operators))
+    profile.compose_operators = [s.strip() for s in compose_ops_raw.split(",") if s.strip()]
 
-    profile.profile_name = prompt_profile_name()
+    # Step 8: Modes
+    _section(8, "Evaluation Modes")
+    all_modes = ["singlecall", "stepwise", "guided"]
+    profile.modes = _select_many("Select evaluation modes", all_modes, profile.modes)
+
+    # Step 9: Profile name
+    _section(9, "Save")
+    profile.profile_name = _text_input("Profile name", profile.profile_name)
 
     return profile
