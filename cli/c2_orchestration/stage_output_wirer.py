@@ -23,7 +23,7 @@ def _provider_args(provider, model, profile):
     (set by provider_env()) rather than --base-url, because not all stages
     accept --base-url as a CLI flag.
     """
-    if provider in ("lmproxy", "ollama", "iosys"):
+    if provider in ("lmproxy", "ollama", "iosys", "lm-studio"):
         return ["--provider", "openai", "--model", model]
     if provider == "claude-code":
         return ["--provider", "claude-code", "--model", model]
@@ -47,6 +47,8 @@ def provider_env(provider, profile):
         if iosys_key:
             env["OPENAI_API_KEY"] = iosys_key
         return env
+    if provider == "lm-studio":
+        return {"OPENAI_BASE_URL": profile.lm_studio_url}
     return {}
 
 

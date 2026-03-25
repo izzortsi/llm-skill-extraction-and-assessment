@@ -36,7 +36,7 @@ def _resolve_litellm_model(entry):
     if provider == "openai":
         return "openai/" + model
 
-    if provider == "iosys":
+    if provider in ("iosys", "lm-studio"):
         return "openai/" + model
 
     # lmproxy, ollama, or unknown: apply heuristic
@@ -59,6 +59,8 @@ def _build_model_entry(entry, profile):
     elif provider == "iosys":
         model_entry["api_base"] = profile.iosys_base_url
         model_entry["api_key_env"] = "IOSYS_API_KEY"
+    elif provider == "lm-studio":
+        model_entry["api_base"] = profile.lm_studio_url
     elif provider == "claude-code":
         model_entry["provider"] = "claude-code"
     else:

@@ -88,6 +88,24 @@ def _probe_ollama(ollama_url: str) -> ProviderStatus:
     return status
 
 
+def _probe_lm_studio(lm_studio_url: str) -> ProviderStatus:
+    """Probe LM Studio local server for available models."""
+    status = ProviderStatus(name="lm-studio", reachable=False, base_url=lm_studio_url)
+    try:
+        resp = requests.get(f"{lm_studio_url}/models", timeout=3)
+        if resp.status_code != 200:
+            status.message = f"/v1/models returned {resp.status_code}"
+            return status
+        data = resp.json()
+        model_list = data.get("data", [])
+        status.models = [m.get("id", "") for m in model_list if m.get("id")]
+        status.reachable = True
+        status.message = f"{len(status.models)} models"
+    except Exception as exc:
+        status.message = str(exc)
+    return status
+
+
 def _probe_iosys(iosys_url: str) -> ProviderStatus:
     """Probe iosys LLM inference API for available models."""
     status = ProviderStatus(name="iosys", reachable=False, base_url=iosys_url)
@@ -189,6 +207,7 @@ def discover_providers(
     lmproxy_url: str = "http://localhost:8080/v1",
     ollama_url: str = "http://localhost:11434/v1",
     iosys_url: str = "http://llm.iosys.net/v1",
+    lm_studio_url: str = "http://localhost:1234/v1",
     config_file: str = "",
 ) -> List[ProviderStatus]:
     """Probe all known providers and return their status."""
@@ -201,8 +220,9 @@ def discover_providers(
 
     ollama_status = _probe_ollama(ollama_url)
     iosys_status = _probe_iosys(iosys_url)
+    lm_studio_status = _probe_lm_studio(lm_studio_url)
     anthropic_status = _check_anthropic()
     openai_status = _check_openai()
     claude_status = _check_claude_code()
 
-    return [lmproxy_status, ollama_status, iosys_status, anthropic_status, openai_status, claude_status]
+    return [lmproxy_status, ollama_status, iosys_status, lm_studio_status, anthropic_status, openai_status, claude_status]
