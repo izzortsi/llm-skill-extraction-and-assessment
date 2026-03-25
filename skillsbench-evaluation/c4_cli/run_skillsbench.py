@@ -15,10 +15,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
+import yaml
+from dataclasses import dataclass
+from typing import Dict, List
 from pathlib import Path
 
-from c1_providers.model_config import load_model_config
-from c1_providers.providers import create_provider
+from openai import OpenAI
+
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
 from c1_types.extracted_task import load_extracted_tasks
 from c1_types.extracted_skill import load_extracted_skills
@@ -27,6 +31,102 @@ from c3_skillsbench.corpus_harness import (
     run_multi_model_evaluation,
     _save_episodes,
 )
+
+
+# ---------------------------------------------------------------------------
+# Inline model config (replaces c1_providers.model_config)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ModelEntry:
+    litellm_model: str
+    provider: str = "lmproxy"
+    api_base: str = ""
+    api_key: str = ""
+    api_key_env: str = ""
+
+
+@dataclass
+class ModelConfig:
+    models: Dict[str, ModelEntry]
+    judge_model_name: str
+
+    @property
+    def model_names(self) -> List[str]:
+        return list(self.models.keys())
+
+    def get_judge_entry(self) -> ModelEntry:
+        return self.models[self.judge_model_name]
+
+
+def load_model_config(path: str) -> ModelConfig:
+    config_path = Path(path)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+    with open(config_path) as fh:
+        raw = yaml.safe_load(fh)
+    if not raw or "models" not in raw:
+        raise ValueError("Config must contain a 'models' key")
+    models: Dict[str, ModelEntry] = {}
+    for name, entry_data in raw["models"].items():
+        litellm_model = entry_data.get("litellm_model", "")
+        if not litellm_model:
+            raise ValueError(f"Model '{name}' missing 'litellm_model' field")
+        api_key_env = entry_data.get("api_key_env", "")
+        api_key = entry_data.get("api_key", "")
+        if api_key_env and not api_key:
+            api_key = os.environ.get(api_key_env, "")
+        models[name] = ModelEntry(
+            litellm_model=litellm_model,
+            api_base=entry_data.get("api_base", ""),
+            api_key=api_key,
+            api_key_env=api_key_env,
+        )
+    judge_section = raw.get("judge", {})
+    judge_model_name = judge_section.get("model", "")
+    if judge_model_name and judge_model_name not in models:
+        raise ValueError(f"Judge model '{judge_model_name}' not found in models config")
+    return ModelConfig(models=models, judge_model_name=judge_model_name)
+
+
+# ---------------------------------------------------------------------------
+# OpenAI-SDK-based provider (replaces c1_providers.providers.create_provider)
+# ---------------------------------------------------------------------------
+
+_LMPROXY_BASE_URL = os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080")
+
+
+def _create_openai_provider(model: str, base_url: str = "", api_key: str = "lmproxy"):
+    """Return a thin wrapper around the OpenAI SDK pointed at lmproxy."""
+    effective_base = base_url or _LMPROXY_BASE_URL
+    client = OpenAI(base_url=effective_base, api_key=api_key)
+
+    class _Provider:
+        def __init__(self):
+            self.model_name = model
+            self._client = client
+
+        def chat(self, messages, tools=None):
+            resp = self._client.chat.completions.create(
+                model=model,
+                messages=messages,
+            )
+            choice = resp.choices[0]
+            content = choice.message.content or ""
+            usage = {
+                "prompt_tokens": resp.usage.prompt_tokens if resp.usage else 0,
+                "completion_tokens": resp.usage.completion_tokens if resp.usage else 0,
+                "total_tokens": resp.usage.total_tokens if resp.usage else 0,
+            }
+
+            class _R:
+                pass
+            r = _R()
+            r.message = {"role": "assistant", "content": content}
+            r.usage = usage
+            return r
+
+    return _Provider()
 
 
 def main() -> None:
@@ -104,11 +204,10 @@ Examples:
 
         # Create judge from config
         judge_entry = config.get_judge_entry()
-        judge_provider = create_provider(
-            judge_entry.provider,
+        judge_provider = _create_openai_provider(
             judge_entry.litellm_model,
             base_url=judge_entry.api_base,
-            api_key=judge_entry.api_key,
+            api_key=judge_entry.api_key or "lmproxy",
         )
         judge = LLMJudgeEvaluator(judge_provider)
 
@@ -123,11 +222,10 @@ Examples:
         all_episodes = []
         for model_index, model_alias in enumerate(model_aliases):
             entry = config.models[model_alias]
-            model_provider = create_provider(
-                entry.provider,
+            model_provider = _create_openai_provider(
                 entry.litellm_model,
                 base_url=entry.api_base,
-                api_key=entry.api_key,
+                api_key=entry.api_key or "lmproxy",
             )
 
             if args.verbose:
@@ -195,7 +293,7 @@ Examples:
 
     model_names = [m.strip() for m in args.models.split(",") if m.strip()]
 
-    judge_provider = create_provider(args.judge_provider, args.judge_model)
+    judge_provider = _create_openai_provider(args.judge_model, base_url=args.base_url)
     judge = LLMJudgeEvaluator(judge_provider)
 
     tasks = load_extracted_tasks(args.tasks)

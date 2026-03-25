@@ -12,14 +12,45 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from c1_providers.providers import create_provider
+import openai
+
 from c2_analytics.summary import compute_summary
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
 from c3_skillmix.harness import run_skillmix_episode, SkillMixEpisode
+
+
+class _OpenAIProvider:
+    """Thin adapter that wraps an openai.OpenAI client to match the provider
+    interface expected by c3_skillmix.harness (`.chat(messages)` returning an
+    object with `.message` dict and `.usage` dict, plus `.model_name`)."""
+
+    def __init__(self, client: openai.OpenAI, model: str):
+        self._client = client
+        self.model_name = model
+
+    def chat(self, messages):
+        response = self._client.chat.completions.create(
+            model=self.model_name, messages=messages
+        )
+        choice = response.choices[0]
+        usage = {
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+            "total_tokens": response.usage.total_tokens,
+        } if response.usage else {}
+
+        class _Result:
+            pass
+
+        result = _Result()
+        result.message = {"content": choice.message.content}
+        result.usage = usage
+        return result
 
 
 @dataclass
@@ -74,11 +105,11 @@ def run_skillmix_experiment(
     episode_count = 0
 
     for model_cfg in model_configs:
-        provider = create_provider(
-            model_cfg.get("provider", "openai"),
-            model_cfg.get("model", ""),
-            base_url=model_cfg.get("base_url", ""),
+        client = openai.OpenAI(
+            base_url=os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
+            api_key="lmproxy",
         )
+        provider = _OpenAIProvider(client, model_cfg.get("model", ""))
         model_name = model_cfg.get("model", "unknown")
 
         if verbose:

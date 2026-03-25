@@ -9,13 +9,58 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Dict, List, Tuple, Any
 
-from c1_providers.stat_utils import (
-    pass_rate,
-    pass_rate_delta_pp,
-    bootstrap_ci,
-    permutation_test,
-)
 from c0_config.trial_result import BenchmarkRecord
+
+
+# ---------------------------------------------------------------------------
+# Inline stat helpers (replaces c1_providers.stat_utils)
+# ---------------------------------------------------------------------------
+
+def _mean(values):
+    return sum(values) / len(values) if values else 0.0
+
+
+def pass_rate(outcomes):
+    return sum(1.0 for o in outcomes if o) / len(outcomes) if outcomes else 0.0
+
+
+def pass_rate_delta_pp(baseline, treatment):
+    return (pass_rate(treatment) - pass_rate(baseline)) * 100.0
+
+
+def bootstrap_ci(values, confidence=0.95, n_bootstrap=10000, seed=42):
+    import random, math
+    if not values:
+        return (0.0, 0.0, 0.0)
+    if len(values) == 1:
+        return (values[0], values[0], values[0])
+    rng = random.Random(seed)
+    n = len(values)
+    point = _mean(values)
+    means = sorted(
+        _mean([values[rng.randint(0, n - 1)] for _ in range(n)])
+        for _ in range(n_bootstrap)
+    )
+    alpha = 1.0 - confidence
+    lo = max(0, min(int(math.floor(alpha / 2 * n_bootstrap)), n_bootstrap - 1))
+    hi = max(0, min(int(math.ceil((1 - alpha / 2) * n_bootstrap)) - 1, n_bootstrap - 1))
+    return (point, means[lo], means[hi])
+
+
+def permutation_test(a, b, n_perm=10000, seed=42):
+    import random
+    if not a or not b:
+        return (0.0, 1.0)
+    rng = random.Random(seed)
+    obs = _mean(a) - _mean(b)
+    combined = list(a) + list(b)
+    na = len(a)
+    count = 0
+    for _ in range(n_perm):
+        rng.shuffle(combined)
+        if abs(_mean(combined[:na]) - _mean(combined[na:])) >= abs(obs):
+            count += 1
+    return (obs, (count + 1) / (n_perm + 1))
 
 
 def compute_pass_rate_delta(

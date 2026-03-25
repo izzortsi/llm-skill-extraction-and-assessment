@@ -26,7 +26,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from c1_providers.providers import create_provider
+import os
+
+from openai import OpenAI
+
 from c0_config.skill_injection import (
     format_skill_for_user_message,
     get_default_system_prompt,
@@ -34,6 +37,46 @@ from c0_config.skill_injection import (
 from c2_evaluation.llm_judge import LLMJudgeEvaluator, JudgeResult
 from c1_types.extracted_task import ExtractedTask
 from c1_types.extracted_skill import ExtractedSkill
+
+
+# ---------------------------------------------------------------------------
+# OpenAI-SDK-based provider (replaces c1_providers.providers.create_provider)
+# ---------------------------------------------------------------------------
+
+_LMPROXY_BASE_URL = os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080")
+
+
+def _create_openai_provider(model: str, base_url: str = "", api_key: str = "lmproxy"):
+    """Return a thin wrapper around the OpenAI SDK pointed at lmproxy."""
+    effective_base = base_url or _LMPROXY_BASE_URL
+    client = OpenAI(base_url=effective_base, api_key=api_key)
+
+    class _Provider:
+        def __init__(self):
+            self.model_name = model
+            self._client = client
+
+        def chat(self, messages, tools=None):
+            resp = self._client.chat.completions.create(
+                model=model,
+                messages=messages,
+            )
+            choice = resp.choices[0]
+            content = choice.message.content or ""
+            usage = {
+                "prompt_tokens": resp.usage.prompt_tokens if resp.usage else 0,
+                "completion_tokens": resp.usage.completion_tokens if resp.usage else 0,
+                "total_tokens": resp.usage.total_tokens if resp.usage else 0,
+            }
+
+            class _R:
+                pass
+            r = _R()
+            r.message = {"role": "assistant", "content": content}
+            r.usage = usage
+            return r
+
+    return _Provider()
 
 
 # ---------------------------------------------------------------------------
@@ -642,7 +685,7 @@ def run_multi_model_evaluation(
             print(f"Model {model_index + 1}/{len(model_names)}: {model_name} (mode={mode})")
             print(f"{'='*60}")
 
-        model_provider = create_provider(provider_name, model_name, base_url=base_url)
+        model_provider = _create_openai_provider(model_name, base_url=base_url)
 
         episodes = run_corpus_evaluation(
             tasks, skills, model_provider, judge,

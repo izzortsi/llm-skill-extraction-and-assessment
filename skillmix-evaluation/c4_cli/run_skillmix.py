@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import List, Optional
 
-from c1_providers.providers import create_provider
+import openai
+
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
 from c3_skillmix.runner import run_skillmix_experiment
 
@@ -61,7 +63,12 @@ def run(args: argparse.Namespace) -> None:
     ]
 
     # Create judge
-    judge_provider = create_provider(args.judge_provider, args.judge_model)
+    from c3_skillmix.runner import _OpenAIProvider
+    judge_client = openai.OpenAI(
+        base_url=os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
+        api_key="lmproxy",
+    )
+    judge_provider = _OpenAIProvider(judge_client, args.judge_model)
     judge = LLMJudgeEvaluator(judge_provider)
 
     # Run

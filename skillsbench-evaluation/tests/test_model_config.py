@@ -2,11 +2,73 @@ import os
 import tempfile
 import yaml
 import pytest
+from dataclasses import dataclass
+from typing import Dict, List
+from pathlib import Path
 
+
+# ---------------------------------------------------------------------------
+# Inline model config (replaces c1_providers.model_config)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ModelEntry:
+    litellm_model: str
+    provider: str = "lmproxy"
+    api_base: str = ""
+    api_key: str = ""
+    api_key_env: str = ""
+
+
+@dataclass
+class ModelConfig:
+    models: Dict[str, ModelEntry]
+    judge_model_name: str
+
+    @property
+    def model_names(self) -> List[str]:
+        return list(self.models.keys())
+
+    def get_judge_entry(self) -> ModelEntry:
+        return self.models[self.judge_model_name]
+
+
+def load_model_config(path: str) -> ModelConfig:
+    config_path = Path(path)
+    if not config_path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+    with open(config_path) as fh:
+        raw = yaml.safe_load(fh)
+    if not raw or "models" not in raw:
+        raise ValueError("Config must contain a 'models' key")
+    models: Dict[str, ModelEntry] = {}
+    for name, entry_data in raw["models"].items():
+        litellm_model = entry_data.get("litellm_model", "")
+        if not litellm_model:
+            raise ValueError(f"Model '{name}' missing 'litellm_model' field")
+        api_key_env = entry_data.get("api_key_env", "")
+        api_key = entry_data.get("api_key", "")
+        if api_key_env and not api_key:
+            api_key = os.environ.get(api_key_env, "")
+        models[name] = ModelEntry(
+            litellm_model=litellm_model,
+            api_base=entry_data.get("api_base", ""),
+            api_key=api_key,
+            api_key_env=api_key_env,
+        )
+    judge_section = raw.get("judge", {})
+    judge_model_name = judge_section.get("model", "")
+    if judge_model_name and judge_model_name not in models:
+        raise ValueError(f"Judge model '{judge_model_name}' not found in models config")
+    return ModelConfig(models=models, judge_model_name=judge_model_name)
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
 def test_load_model_config_returns_model_entries():
     """load_model_config parses YAML and returns ModelConfig with model entries."""
-    from c1_providers.model_config import load_model_config
     config_data = {
         "models": {
             "qwen2.5-3b": {
@@ -33,7 +95,6 @@ def test_load_model_config_returns_model_entries():
 
 def test_load_model_config_resolves_api_key_from_env():
     """api_key_env field resolves to actual key from environment."""
-    from c1_providers.model_config import load_model_config
     config_data = {
         "models": {
             "glm": {
@@ -59,7 +120,6 @@ def test_load_model_config_resolves_api_key_from_env():
 
 def test_load_model_config_raises_on_missing_models_key():
     """Config without 'models' key raises ValueError."""
-    from c1_providers.model_config import load_model_config
     config_data = {"judge": {"model": "x"}}
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -75,7 +135,6 @@ def test_load_model_config_raises_on_missing_models_key():
 
 def test_model_entry_list_returns_all_model_names():
     """ModelConfig.model_names returns list of all configured model aliases."""
-    from c1_providers.model_config import load_model_config
     config_data = {
         "models": {
             "model-a": {"litellm_model": "openai/a"},
