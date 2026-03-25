@@ -7,6 +7,7 @@ sequentially via subprocess isolation.
 """
 
 import json
+import os
 import shutil
 from pathlib import Path
 from typing import Dict, List
@@ -90,6 +91,56 @@ def ui_info(msg):
         _plain_print(f"  {msg}")
 
 
+def _profile_uses_lmproxy(profile) -> bool:
+    """Check if any role in the profile uses lmproxy provider."""
+    if getattr(profile, "extraction_provider", "") == "lmproxy":
+        return True
+    if getattr(profile, "trace_provider", "") == "lmproxy":
+        return True
+    if getattr(profile, "judge_provider", "") == "lmproxy":
+        return True
+    for entry in getattr(profile, "eval_models", []):
+        if isinstance(entry, dict) and entry.get("provider") == "lmproxy":
+            return True
+    return False
+
+
+def _start_lmproxy_session(profile, print_fn=print) -> str:
+    """Register with lmproxy and start session. Returns worker_id or empty string."""
+    import requests
+    url = getattr(profile, "lmproxy_base_url", "")
+    if not url:
+        return ""
+    base = url.rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3]
+    pid = os.getpid()
+    identifier = f"llm-skills-{profile.profile_name}-{pid}"
+    worker_id = f"worker-{identifier}"
+    try:
+        requests.post(f"{base}/register", json={"identifier": identifier}, timeout=5)
+        requests.post(f"{base}/session/start", json={"worker_id": worker_id, "service": "openai"}, timeout=5)
+        print_fn(f"  lmproxy session started: {worker_id}")
+    except Exception as exc:
+        print_fn(f"  lmproxy session warning: {exc}")
+    return worker_id
+
+
+def _end_lmproxy_session(profile, worker_id: str, print_fn=print):
+    """End lmproxy session."""
+    if not worker_id:
+        return
+    import requests
+    url = getattr(profile, "lmproxy_base_url", "")
+    base = url.rstrip("/")
+    if base.endswith("/v1"):
+        base = base[:-3]
+    try:
+        requests.post(f"{base}/session/end", json={"worker_id": worker_id, "session_id": worker_id}, timeout=5)
+    except Exception:
+        pass
+
+
 def execute_pipeline(
     profile: PipelineProfile,
     stage_range: str,
@@ -158,95 +209,116 @@ def execute_pipeline(
 
     results = []
 
-    for stage_id in stage_ids:
-        stage = get_stage(stage_id)
-        pipeline_dir = repo_root / stage.pipeline_dir
+    # Generate models.yaml from profile if eval_models are structured dicts
+    generated_config = None
+    if profile.eval_models and isinstance(profile.eval_models[0], dict):
+        from c2_orchestration.config_generator import generate_models_yaml
+        generated_config = run_dir / "models.yaml"
+        generate_models_yaml(profile, generated_config)
 
-        ui_stage_start(stage_id, stage.description)
+    # Start lmproxy session if needed
+    lmproxy_worker_id = ""
+    if _profile_uses_lmproxy(profile):
+        lmproxy_worker_id = _start_lmproxy_session(profile, print_fn)
+        if lmproxy_worker_id:
+            os.environ["LMPROXY_WORKER_ID"] = lmproxy_worker_id
 
-        # check dependencies
-        missing_deps = check_dependencies_met(stage, run_dir)
-        if len(missing_deps) > 0:
-            ui_dep_error(stage_id, missing_deps)
-            break
+    try:
+        for stage_id in stage_ids:
+            stage = get_stage(stage_id)
+            pipeline_dir = repo_root / stage.pipeline_dir
 
-        # check if output already exists (crash recovery)
-        if _stage_output_exists(stage, run_dir, profile):
-            ui_stage_skip(stage_id)
-            results.append(StageResult(
-                stage_id=stage_id,
-                command="(skipped)",
-                exit_code=0,
-                duration_seconds=0.0,
-                log_path="",
-            ))
-            continue
+            ui_stage_start(stage_id, stage.description)
 
-        # ensure output directories exist
-        if stage.output_dir:
-            (run_dir / stage.output_dir).mkdir(parents=True, exist_ok=True)
-
-        # execute stage
-        if stage_id == "4b":
-            stage_result = _execute_stage4b(
-                stage, profile, run_dir, repo_root, pipeline_dir,
-                logs_dir, stage_outputs, verbose, print_fn,
-            )
-            results.append(stage_result)
-            if stage_result.exit_code != 0:
+            # check dependencies
+            missing_deps = check_dependencies_met(stage, run_dir)
+            if len(missing_deps) > 0:
+                ui_dep_error(stage_id, missing_deps)
                 break
-            stage_outputs[stage_id] = register_stage_outputs(stage_id, run_dir)
-            continue
-        elif stage_id == "5":
-            stage_results = _execute_stage5(
-                stage, profile, run_dir, repo_root, pipeline_dir,
-                logs_dir, stage_outputs, verbose, print_fn,
-            )
-            results.extend(stage_results)
-        elif stage_id == "6":
-            stage_result = _execute_stage6(
-                stage, profile, run_dir, repo_root, pipeline_dir,
-                logs_dir, stage_outputs, verbose, print_fn,
-            )
-            results.append(stage_result)
-        elif stage_id == "7":
-            stage_results = _execute_stage7(
-                stage, profile, run_dir, repo_root, pipeline_dir,
-                logs_dir, stage_outputs, verbose, print_fn,
-            )
-            results.extend(stage_results)
-        elif stage_id == "8":
-            stage_results = _execute_stage8(
-                stage, profile, run_dir, repo_root, pipeline_dir,
-                logs_dir, stage_outputs, verbose, print_fn,
-            )
-            results.extend(stage_results)
-        else:
-            args = build_stage_args(stage_id, profile, run_dir, repo_root, stage_outputs)
-            log_path = logs_dir / f"stage{stage_id}-{stage.name}.log"
 
-            result = run_stage_command(
-                pipeline_dir=pipeline_dir,
-                command=stage.commands[0],
-                args=args,
-                log_path=log_path,
-                verbose=verbose,
-            )
-            result.stage_id = stage_id
+            # check if output already exists (crash recovery)
+            if _stage_output_exists(stage, run_dir, profile):
+                ui_stage_skip(stage_id)
+                results.append(StageResult(
+                    stage_id=stage_id,
+                    command="(skipped)",
+                    exit_code=0,
+                    duration_seconds=0.0,
+                    log_path="",
+                ))
+                continue
 
-            if result.exit_code != 0:
-                ui_stage_fail(stage_id, result.exit_code, result.log_path)
+            # ensure output directories exist
+            if stage.output_dir:
+                (run_dir / stage.output_dir).mkdir(parents=True, exist_ok=True)
+
+            # execute stage
+            if stage_id == "4b":
+                stage_result = _execute_stage4b(
+                    stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn,
+                )
+                results.append(stage_result)
+                if stage_result.exit_code != 0:
+                    break
+                stage_outputs[stage_id] = register_stage_outputs(stage_id, run_dir)
+                continue
+            elif stage_id == "5":
+                stage_results = _execute_stage5(
+                    stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn,
+                )
+                results.extend(stage_results)
+            elif stage_id == "6":
+                stage_result = _execute_stage6(
+                    stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn,
+                )
+                results.append(stage_result)
+            elif stage_id == "7":
+                stage_results = _execute_stage7(
+                    stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn,
+                )
+                results.extend(stage_results)
+            elif stage_id == "8":
+                stage_results = _execute_stage8(
+                    stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn,
+                )
+                results.extend(stage_results)
+            else:
+                args = build_stage_args(stage_id, profile, run_dir, repo_root, stage_outputs)
+                log_path = logs_dir / f"stage{stage_id}-{stage.name}.log"
+
+                result = run_stage_command(
+                    pipeline_dir=pipeline_dir,
+                    command=stage.commands[0],
+                    args=args,
+                    log_path=log_path,
+                    verbose=verbose,
+                )
+                result.stage_id = stage_id
+
+                if result.exit_code != 0:
+                    ui_stage_fail(stage_id, result.exit_code, result.log_path)
+                    results.append(result)
+                    break
+
+                ui_stage_complete(stage_id, result.duration_seconds)
                 results.append(result)
-                break
 
-            ui_stage_complete(stage_id, result.duration_seconds)
-            results.append(result)
+            # post-stage: convert JSON outputs to markdown for reuse
+            _convert_stage_outputs_to_markdown(stage_id, run_dir, pipeline_dir, logs_dir, verbose)
 
-        # post-stage: convert JSON outputs to markdown for reuse
-        _convert_stage_outputs_to_markdown(stage_id, run_dir, pipeline_dir, logs_dir, verbose)
+            # register outputs
+            stage_outputs[stage_id] = register_stage_outputs(stage_id, run_dir)
 
-        # register outputs
-        stage_outputs[stage_id] = register_stage_outputs(stage_id, run_dir)
+    finally:
+        # End lmproxy session
+        if lmproxy_worker_id:
+            _end_lmproxy_session(profile, lmproxy_worker_id, print_fn)
+            os.environ.pop("LMPROXY_WORKER_ID", None)
 
     return results
 
