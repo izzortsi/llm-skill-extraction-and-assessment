@@ -293,8 +293,58 @@ def select_provider(role_label: str, providers: list, default_provider: str = ""
         print("  Invalid choice (provider unreachable or out of range).")
 
 
+CLAUDE_CODE_TIERS = [
+    ("haiku  (claude-haiku-4-5-20251001)", "claude-haiku-4-5-20251001"),
+    ("sonnet (claude-sonnet-4-6)", "claude-sonnet-4-6"),
+    ("opus   (claude-opus-4-6)", "claude-opus-4-6"),
+]
+
+
+def _select_claude_code_tier(role_label: str, default_model: str = "") -> str:
+    """Pick a Claude Code model tier (haiku/sonnet/opus)."""
+    tier_names = [t[0] for t in CLAUDE_CODE_TIERS]
+    tier_values = [t[1] for t in CLAUDE_CODE_TIERS]
+
+    if not default_model or default_model == "claude-code":
+        default_model = "claude-haiku-4-5-20251001"
+
+    if HAS_INQUIRER:
+        iq_choices = [Choice(value=v, name=n) for n, v in CLAUDE_CODE_TIERS]
+        result = inquirer.select(
+            message=f"{role_label} model (claude-code)",
+            choices=iq_choices,
+            default=default_model if default_model in tier_values else None,
+        ).execute()
+        return result
+
+    # Fallback
+    print(f"\n  {role_label} model (claude-code)")
+    for i, name in enumerate(tier_names):
+        print(f"    {i + 1}. {name}")
+
+    default_display = ""
+    if default_model in tier_values:
+        default_display = str(tier_values.index(default_model) + 1)
+
+    while True:
+        raw = input(f"  Enter number [{default_display}]: ").strip()
+        if not raw and default_display:
+            return tier_values[int(default_display) - 1]
+        try:
+            idx = int(raw) - 1
+            if 0 <= idx < len(tier_values):
+                return tier_values[idx]
+        except (ValueError, IndexError):
+            pass
+        print("  Invalid choice, try again.")
+
+
 def select_model(role_label: str, provider_status, default_model: str = "") -> str:
     """Select one model from a provider's model list + custom option."""
+    # claude-code: show tier picker (no custom option — tiers are exhaustive)
+    if provider_status and provider_status.name == "claude-code":
+        return _select_claude_code_tier(role_label, default_model)
+
     CUSTOM_SENTINEL = "__custom__"
     models = list(provider_status.models) if provider_status.models else []
     choices = models + ["[ enter custom model name ]"]
