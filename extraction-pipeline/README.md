@@ -11,8 +11,8 @@ extracts procedural skills from text corpora through a multi-stage pipeline:
 2. generate evaluation tasks from passages using an LLM
 3. capture reasoning traces by running tasks through an LLM
 4. extract reusable procedural skills from traces
-5. verify skill quality via rule-based checks
-6. compose atomic skills into multi-skill combinations (SkillMix)
+5. verify skill quality via rule-based checks, then LLM revision of defective skills
+6. compose atomic skills into multi-skill combinations (k=2..5, operators: seq/par/cond)
 7. generate traceability reports linking passages to tasks to skills
 
 ## commands
@@ -43,7 +43,7 @@ data/pipeline-runs/default-profile/
     stage4-skill-verification/
         verified_skills.json, verified-skills-md/
     stage4b-skill-composition/
-        atomic-skills-md/, k3/ (composed skills)
+        atomic-skills-md/, k2/, k3/, k4/, k5/ (composed skills by size)
     stage5-corpus-evaluation/
         {singlecall,stepwise,guided}/results-all.json
     stage6-visualization/
@@ -51,7 +51,8 @@ data/pipeline-runs/default-profile/
     stage8-skillmix-evaluation/
         episodes.json, summary.json, report.txt
     stage9-skillmix-visualization/
-        baseline_vs_skill.png, delta_by_model.png, skill_heatmap.png, win_loss.png
+        score_by_k.png, operator_heatmap.png, uplift_heatmap.png,
+        k_operator_heatmap.png, baseline_vs_skill.png, win_loss.png
     traceability-report.txt
     csv/
         skills.csv, skill_instances.csv
@@ -71,7 +72,8 @@ c4_cli/            main.py with 11 commands
 
 ## dependencies
 
-- anthropic (task/skill extraction, trace capture)
+- anthropic (task/skill extraction, trace capture, skill revision)
 - openai (Ollama model access)
 - datasets (HuggingFace dataset loading)
 - pyyaml (skill markdown parsing)
+- llm-skills.llm-providers (LLM provider abstraction, used by stage 4 --revise)

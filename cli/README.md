@@ -122,7 +122,7 @@ stage  name                pipeline project                      commands
 1b     extract-tasks       llm-skills.extraction-pipeline        extract-tasks
 2      capture-traces      llm-skills.extraction-pipeline        capture-traces
 3      extract-skills      llm-skills.extraction-pipeline        extract-skills
-4      verify-skills       llm-skills.extraction-pipeline        verify-skills
+4      verify-skills       llm-skills.extraction-pipeline        verify-skills --revise
 4b     compose-skills      llm-skills.extraction-pipeline        compose-skills
 5      corpus-evaluation   llm-skills.skillsbench-evaluation     run-skillsbench
 6      visualization       llm-skills.skillsbench-evaluation     heatmaps
@@ -130,6 +130,15 @@ stage  name                pipeline project                      commands
 8      skillmix-evaluation  llm-skills.skillmix-evaluation        run-skillmix, report
 9      skillmix-viz         llm-skills.skillmix-evaluation        visualize
 ```
+
+### LLM usage by stage
+
+- **stage 1b** (extract-tasks): extraction LLM generates tasks from passages
+- **stage 2** (capture-traces): trace LLM runs tasks to capture reasoning traces
+- **stage 3** (extract-skills): extraction LLM extracts skills from traces
+- **stage 4** (verify-skills): rule-based checks first, then extraction LLM revises defective skills using b0.standards/ language rules (up to 2 revision attempts per skill)
+- **stage 5** (corpus-evaluation): LLM judge scores model responses against acceptance criteria
+- **stage 8** (skillmix-evaluation): LLM judge scores composed-skill responses against acceptance criteria
 
 each stage runs as a subprocess inside its pipeline directory:
 
@@ -176,6 +185,13 @@ judge_model: claude-opus-4-6
 
 # skill extraction (stage 3)
 max_skills: 8
+
+# skill composition (stage 4b)
+compose_k_values:
+  - 2
+  - 3
+  - 4
+  - 5
 ```
 
 the `--minimal` flag overrides any profile with: 1 chunk, 2 tasks/chunk, 2 skills,
