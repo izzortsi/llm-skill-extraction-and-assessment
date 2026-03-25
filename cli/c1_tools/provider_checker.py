@@ -38,6 +38,22 @@ def check_ollama(url: str) -> CheckResult:
     return CheckResult("Ollama", False, f"unexpected response from {url}")
 
 
+def check_lmproxy(url: str) -> CheckResult:
+    """Check lmproxy health endpoint."""
+    try:
+        base = url.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[:-3]
+        import urllib.request
+        req = urllib.request.Request(f"{base}/health", method="GET")
+        resp = urllib.request.urlopen(req, timeout=5)
+        if resp.status == 200:
+            return CheckResult("lmproxy", True, f"reachable at {url}")
+        return CheckResult("lmproxy", False, f"health returned {resp.status}")
+    except Exception as exc:
+        return CheckResult("lmproxy", False, f"unreachable: {exc}")
+
+
 def check_anthropic_key() -> CheckResult:
     """Check if Anthropic API key or OAuth is configured."""
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -91,5 +107,20 @@ def run_preflight_checks(profile) -> List[CheckResult]:
 
     if profile.zai_model:
         results.append(check_zhipu_key())
+
+    # lmproxy check
+    if hasattr(profile, "lmproxy_base_url") and profile.lmproxy_base_url:
+        uses_lmproxy = (
+            getattr(profile, "extraction_provider", "") == "lmproxy"
+            or getattr(profile, "trace_provider", "") == "lmproxy"
+            or getattr(profile, "judge_provider", "") == "lmproxy"
+            or any(
+                entry.get("provider") == "lmproxy"
+                for entry in getattr(profile, "eval_models", [])
+                if isinstance(entry, dict)
+            )
+        )
+        if uses_lmproxy:
+            results.append(check_lmproxy(profile.lmproxy_base_url))
 
     return results
