@@ -49,12 +49,19 @@ stage8-skillmix-evaluation/
     episodes.json           per-episode results (task, skill, model, condition, score)
     summary.json            per-model aggregate statistics (baseline_mean, skill_mean, delta)
     report.txt              text summary report
-    charts/
-        baseline_vs_skill.png   grouped bar: baseline vs skill-injected per model
-        delta_by_model.png      bar chart: uplift (delta) per model
-        skill_heatmap.png       heatmap: mean score per skill x model
-        win_loss.png            stacked bar: win/tie/loss per model
+
+stage9-skillmix-visualization/
+    score_by_k.png          line: mean score by composition size (k), one line per model
+    operator_heatmap.png    heatmap: operator type (seq/par/cond/atomic) x model
+    uplift_heatmap.png      heatmap: skill x model, diverging delta from baseline
+    k_operator_heatmap.png  heatmap: (k, operator) combinations x model
+    baseline_vs_skill.png   grouped bar: baseline vs skill-injected per model
+    win_loss.png            stacked bar: win/tie/loss per model
 ```
+
+the visualizer parses composition metadata from skill names:
+- operator type: `seq-`, `par-`, `cond-` prefix (no prefix = atomic)
+- k-value: number of atomic skills in the composition (counted from separators)
 
 ## structure
 

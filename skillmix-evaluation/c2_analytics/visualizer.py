@@ -4,28 +4,38 @@ visualizer.py
 Generate charts from SkillMix experiment results. Reads episodes.json
 and summary.json produced by run-skillmix and generates PNG visualizations.
 
+SkillMix-specific dimensions parsed from skill_name:
+    operator    seq / par / cond / atomic (no prefix = atomic)
+    k           composition size (number of atomic skills combined)
+
 Charts:
-    baseline_vs_skill.png   grouped bar: baseline vs skill-injected per model
-    delta_by_model.png      bar chart: uplift (delta) per model
-    skill_heatmap.png       heatmap: mean score per skill x model
-    win_loss.png            stacked bar: win/tie/loss per model
+    score_by_k.png              line: mean score by k-value, one line per model
+    operator_heatmap.png        heatmap: operator x model, mean score
+    uplift_heatmap.png          heatmap: skill x model, delta from baseline (diverging)
+    k_operator_heatmap.png      heatmap: (k, operator) x model, mean score
+    baseline_vs_skill.png       grouped bar: baseline vs skill-injected per model
+    win_loss.png                stacked bar: win/tie/loss per model
 """
 
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 
 
 PALETTE = ("#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974",
            "#64B5CD", "#DD8452", "#A1C9F4")
+
+OPERATOR_COLORS = {"atomic": "#4C72B0", "seq": "#55A868", "par": "#DD8452", "cond": "#C44E52"}
 
 
 def _load_data(results_dir: Path) -> tuple:
@@ -35,6 +45,292 @@ def _load_data(results_dir: Path) -> tuple:
     with open(results_dir / "summary.json", "r", encoding="utf-8") as f:
         summary = json.load(f)
     return episodes, summary
+
+
+def _parse_skill_name(skill_name: str) -> Tuple[str, int]:
+    """Extract operator type and k-value from a composed skill name.
+
+    Naming conventions:
+        atomic skill (no prefix):  "extract-parallel-claims"         -> ("atomic", 1)
+        seq composition:           "seq-skill1-then-skill2"          -> ("seq", 2)
+        par composition:           "par-skill1-and-skill2-and-s3"    -> ("par", 3)
+        cond composition:          "cond-skill1-then-skill2-and-s3"  -> ("cond", 3)
+
+    Returns:
+        (operator, k) tuple
+    """
+    if not skill_name:
+        return ("baseline", 0)
+
+    for prefix in ("seq-", "par-", "cond-"):
+        if skill_name.startswith(prefix):
+            operator = prefix[:-1]
+            body = skill_name[len(prefix):]
+            separators = len(re.findall(r"-(?:then|and)-", body))
+            k = separators + 1
+            return (operator, k)
+
+    return ("atomic", 1)
+
+
+def generate_score_by_k(
+    episodes: List[Dict],
+    output_path: Path,
+    dpi: int = 150,
+) -> None:
+    """Line chart: mean score by k-value, one line per model."""
+    # group by (model, k) -> scores
+    by_model_k = defaultdict(lambda: defaultdict(list))
+    for ep in episodes:
+        if ep.get("condition") != "skill_injected":
+            continue
+        model = ep.get("model", "")
+        _, k = _parse_skill_name(ep.get("skill_name", ""))
+        score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
+        by_model_k[model][k].append(score)
+
+    if not by_model_k:
+        return
+
+    models = sorted(by_model_k.keys())
+    all_k = sorted(set(k for m in models for k in by_model_k[m].keys()))
+
+    # also compute baseline per model for reference line
+    baseline_by_model = defaultdict(list)
+    for ep in episodes:
+        if ep.get("condition") == "baseline":
+            model = ep.get("model", "")
+            score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
+            baseline_by_model[model].append(score)
+
+    fig, ax = plt.subplots(figsize=(max(6, len(all_k) * 1.5 + 2), 5))
+
+    for idx, model in enumerate(models):
+        k_values = []
+        means = []
+        for k in all_k:
+            vals = by_model_k[model].get(k, [])
+            if vals:
+                k_values.append(k)
+                means.append(sum(vals) / len(vals))
+        color = PALETTE[idx % len(PALETTE)]
+        ax.plot(k_values, means, marker="o", label=model, color=color, linewidth=2)
+
+        # baseline reference
+        b_vals = baseline_by_model.get(model, [])
+        if b_vals:
+            b_mean = sum(b_vals) / len(b_vals)
+            ax.axhline(y=b_mean, color=color, linewidth=0.8, linestyle="--", alpha=0.5)
+
+    ax.set_xlabel("Composition Size (k)", fontsize=11)
+    ax.set_ylabel("Mean Score", fontsize=11)
+    ax.set_title("Score by Composition Size (k)", fontsize=13, pad=12)
+    ax.set_xticks(all_k)
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=9)
+    ax.grid(axis="y", alpha=0.3)
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+
+
+def generate_operator_heatmap(
+    episodes: List[Dict],
+    output_path: Path,
+    dpi: int = 150,
+) -> None:
+    """Heatmap: operator type x model, cell = mean score (skill-injected only)."""
+    scores = defaultdict(lambda: defaultdict(list))
+    models_set = set()
+    for ep in episodes:
+        if ep.get("condition") != "skill_injected":
+            continue
+        model = ep.get("model", "")
+        operator, _ = _parse_skill_name(ep.get("skill_name", ""))
+        score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
+        scores[operator][model].append(score)
+        models_set.add(model)
+
+    if not scores:
+        return
+
+    operators = sorted(scores.keys())
+    models = sorted(models_set)
+
+    data = np.zeros((len(operators), len(models)))
+    for i, op in enumerate(operators):
+        for j, m in enumerate(models):
+            vals = scores[op][m]
+            data[i, j] = sum(vals) / len(vals) if vals else 0.0
+
+    figsize = (max(6, len(models) * 1.5 + 3), max(3, len(operators) * 0.8 + 2))
+    fig, ax = plt.subplots(figsize=figsize)
+
+    im = ax.imshow(data, cmap="YlGnBu", aspect="auto", vmin=0.0, vmax=1.0)
+
+    ax.set_xticks(range(len(models)))
+    ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
+    ax.set_yticks(range(len(operators)))
+    ax.set_yticklabels(operators, fontsize=10)
+    ax.set_title("Mean Score by Operator Type x Model", fontsize=13, pad=12)
+
+    for i in range(len(operators)):
+        for j in range(len(models)):
+            val = data[i, j]
+            text_color = "white" if val > 0.65 else "black"
+            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                    fontsize=9, color=text_color)
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_label("Mean Score", fontsize=10)
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+
+
+def generate_uplift_heatmap(
+    episodes: List[Dict],
+    output_path: Path,
+    dpi: int = 150,
+) -> None:
+    """Heatmap: skill x model, cell = delta (skill score - baseline score).
+
+    Uses a diverging RdBu colormap: blue = positive uplift, red = negative.
+    """
+    # compute baseline mean per (model, task)
+    baseline_scores = defaultdict(lambda: defaultdict(list))
+    skill_scores = defaultdict(lambda: defaultdict(list))
+    models_set = set()
+
+    for ep in episodes:
+        model = ep.get("model", "")
+        score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
+        models_set.add(model)
+        if ep.get("condition") == "baseline":
+            task = ep.get("task_uid", ep.get("task_id", ""))
+            baseline_scores[model][task].append(score)
+        elif ep.get("condition") == "skill_injected":
+            sn = ep.get("skill_name", "")
+            skill_scores[sn][model].append(score)
+
+    if not skill_scores:
+        return
+
+    # compute baseline mean per model (across all tasks)
+    baseline_mean = {}
+    for m in models_set:
+        all_b = [s for task_scores in baseline_scores[m].values() for s in task_scores]
+        baseline_mean[m] = sum(all_b) / len(all_b) if all_b else 0.0
+
+    skills = sorted(skill_scores.keys())
+    models = sorted(models_set)
+
+    data = np.zeros((len(skills), len(models)))
+    for i, sk in enumerate(skills):
+        for j, m in enumerate(models):
+            vals = skill_scores[sk][m]
+            sk_mean = sum(vals) / len(vals) if vals else 0.0
+            data[i, j] = sk_mean - baseline_mean.get(m, 0.0)
+
+    # shorten skill labels for display
+    labels = []
+    for sk in skills:
+        op, k = _parse_skill_name(sk)
+        if op == "atomic":
+            label = sk[:30]
+        else:
+            label = f"[{op} k={k}] {sk[len(op)+1:30]}"
+        labels.append(label)
+
+    vmax = max(abs(data.min()), abs(data.max()), 0.05)
+    norm = mcolors.TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
+
+    figsize = (max(6, len(models) * 1.5 + 3), max(4, len(skills) * 0.45 + 2))
+    fig, ax = plt.subplots(figsize=figsize)
+
+    im = ax.imshow(data, cmap="RdBu", norm=norm, aspect="auto")
+
+    ax.set_xticks(range(len(models)))
+    ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
+    ax.set_yticks(range(len(skills)))
+    ax.set_yticklabels(labels, fontsize=7)
+    ax.set_title("Uplift Heatmap: Score Delta (Skill - Baseline)", fontsize=13, pad=12)
+
+    for i in range(len(skills)):
+        for j in range(len(models)):
+            val = data[i, j]
+            text_color = "white" if abs(val) > vmax * 0.6 else "black"
+            ax.text(j, i, f"{val:+.2f}", ha="center", va="center",
+                    fontsize=7, color=text_color)
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_label("Score Delta", fontsize=10)
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+
+
+def generate_k_operator_heatmap(
+    episodes: List[Dict],
+    output_path: Path,
+    dpi: int = 150,
+) -> None:
+    """Heatmap: rows = (k, operator) combinations, columns = models."""
+    scores = defaultdict(lambda: defaultdict(list))
+    models_set = set()
+    for ep in episodes:
+        if ep.get("condition") != "skill_injected":
+            continue
+        model = ep.get("model", "")
+        operator, k = _parse_skill_name(ep.get("skill_name", ""))
+        score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
+        row_key = f"k={k} {operator}"
+        scores[row_key][model].append(score)
+        models_set.add(model)
+
+    if not scores:
+        return
+
+    row_keys = sorted(scores.keys())
+    models = sorted(models_set)
+
+    data = np.zeros((len(row_keys), len(models)))
+    for i, rk in enumerate(row_keys):
+        for j, m in enumerate(models):
+            vals = scores[rk][m]
+            data[i, j] = sum(vals) / len(vals) if vals else 0.0
+
+    figsize = (max(6, len(models) * 1.5 + 3), max(3, len(row_keys) * 0.6 + 2))
+    fig, ax = plt.subplots(figsize=figsize)
+
+    im = ax.imshow(data, cmap="YlGnBu", aspect="auto", vmin=0.0, vmax=1.0)
+
+    ax.set_xticks(range(len(models)))
+    ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
+    ax.set_yticks(range(len(row_keys)))
+    ax.set_yticklabels(row_keys, fontsize=9)
+    ax.set_title("Mean Score by (k, Operator) x Model", fontsize=13, pad=12)
+
+    for i in range(len(row_keys)):
+        for j in range(len(models)):
+            val = data[i, j]
+            text_color = "white" if val > 0.65 else "black"
+            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                    fontsize=8, color=text_color)
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_label("Mean Score", fontsize=10)
+
+    plt.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
 
 
 def generate_baseline_vs_skill_bar(
@@ -61,103 +357,11 @@ def generate_baseline_vs_skill_bar(
     ax.set_ylim(0, 1.05)
     ax.legend(fontsize=9)
 
-    # value labels above bars
     for bar in list(bars_b) + list(bars_s):
         h = bar.get_height()
         ax.annotate(f"{h:.2f}", xy=(bar.get_x() + bar.get_width() / 2, h),
                     xytext=(0, 3), textcoords="offset points",
                     ha="center", va="bottom", fontsize=8)
-
-    plt.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-
-
-def generate_delta_by_model_bar(
-    summary: Dict[str, Any],
-    output_path: Path,
-    dpi: int = 150,
-) -> None:
-    """Bar chart: delta (uplift) per model."""
-    models = sorted(summary.keys(), key=lambda m: summary[m]["delta"], reverse=True)
-    deltas = [summary[m]["delta"] for m in models]
-
-    colors = [PALETTE[1] if d >= 0 else PALETTE[2] for d in deltas]
-
-    fig, ax = plt.subplots(figsize=(max(6, len(models) * 1.5), 5))
-    bars = ax.bar(range(len(models)), deltas, color=colors)
-
-    ax.set_ylabel("Score Delta (Skill - Baseline)", fontsize=11)
-    ax.set_title("Skill Injection Uplift by Model", fontsize=13, pad=12)
-    ax.set_xticks(range(len(models)))
-    ax.set_xticklabels(models, rotation=30, ha="right", fontsize=9)
-    ax.axhline(y=0, color="black", linewidth=0.5, linestyle="--")
-
-    for bar, d in zip(bars, deltas):
-        ypos = bar.get_height()
-        offset = 3 if d >= 0 else -10
-        ax.annotate(f"{d:+.3f}", xy=(bar.get_x() + bar.get_width() / 2, ypos),
-                    xytext=(0, offset), textcoords="offset points",
-                    ha="center", va="bottom", fontsize=8)
-
-    plt.tight_layout()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-
-
-def generate_skill_heatmap(
-    episodes: List[Dict],
-    output_path: Path,
-    dpi: int = 150,
-) -> None:
-    """Heatmap: mean score per skill x model (skill-injected episodes only)."""
-    # group scores by (skill, model)
-    scores = defaultdict(lambda: defaultdict(list))
-    models_set = set()
-    for ep in episodes:
-        if ep.get("condition") != "skill_injected":
-            continue
-        sn = ep.get("skill_name", "")
-        model = ep.get("model", "")
-        score = ep.get("score", 1.0 if ep.get("passed") else 0.0)
-        scores[sn][model].append(score)
-        models_set.add(model)
-
-    if not scores:
-        return
-
-    skills = sorted(scores.keys())
-    models = sorted(models_set)
-
-    data = np.zeros((len(skills), len(models)))
-    for i, sk in enumerate(skills):
-        for j, m in enumerate(models):
-            vals = scores[sk][m]
-            data[i, j] = sum(vals) / len(vals) if vals else 0.0
-
-    figsize = (max(6, len(models) * 1.5 + 3), max(4, len(skills) * 0.5 + 2))
-    fig, ax = plt.subplots(figsize=figsize)
-
-    im = ax.imshow(data, cmap="YlGnBu", aspect="auto", vmin=0.0, vmax=1.0)
-
-    ax.set_xticks(range(len(models)))
-    ax.set_xticklabels(models, rotation=45, ha="right", fontsize=9)
-    ax.set_yticks(range(len(skills)))
-    ax.set_yticklabels(skills, fontsize=8)
-    ax.set_title("Skill-Injected Score by Skill x Model", fontsize=13, pad=12)
-
-    # text overlay
-    for i in range(len(skills)):
-        for j in range(len(models)):
-            val = data[i, j]
-            text_color = "white" if val > 0.65 else "black"
-            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
-                    fontsize=8, color=text_color)
-
-    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
-    cbar.set_label("Mean Score", fontsize=10)
 
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -176,7 +380,6 @@ def generate_win_loss_bar(
     For each task, a win occurs when skill_injected score > baseline score,
     a loss when skill_injected < baseline, and a tie when equal.
     """
-    # group by (model, task) -> {baseline: [scores], skill: [scores]}
     by_model_task = defaultdict(lambda: defaultdict(lambda: {"baseline": [], "skill_injected": []}))
     for ep in episodes:
         model = ep.get("model", "")
@@ -248,17 +451,19 @@ def generate_all(
     output_dir.mkdir(parents=True, exist_ok=True)
     generated = []
 
-    generate_baseline_vs_skill_bar(summary, output_dir / "baseline_vs_skill.png", dpi)
-    generated.append(str(output_dir / "baseline_vs_skill.png"))
+    charts = [
+        ("score_by_k.png", lambda p: generate_score_by_k(episodes, p, dpi)),
+        ("operator_heatmap.png", lambda p: generate_operator_heatmap(episodes, p, dpi)),
+        ("uplift_heatmap.png", lambda p: generate_uplift_heatmap(episodes, p, dpi)),
+        ("k_operator_heatmap.png", lambda p: generate_k_operator_heatmap(episodes, p, dpi)),
+        ("baseline_vs_skill.png", lambda p: generate_baseline_vs_skill_bar(summary, p, dpi)),
+        ("win_loss.png", lambda p: generate_win_loss_bar(episodes, summary, p, dpi)),
+    ]
 
-    generate_delta_by_model_bar(summary, output_dir / "delta_by_model.png", dpi)
-    generated.append(str(output_dir / "delta_by_model.png"))
-
-    generate_skill_heatmap(episodes, output_dir / "skill_heatmap.png", dpi)
-    generated.append(str(output_dir / "skill_heatmap.png"))
-
-    generate_win_loss_bar(episodes, summary, output_dir / "win_loss.png", dpi)
-    generated.append(str(output_dir / "win_loss.png"))
+    for filename, gen_fn in charts:
+        path = output_dir / filename
+        gen_fn(path)
+        generated.append(str(path))
 
     return generated
 
