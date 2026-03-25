@@ -13,4 +13,4 @@ import _bootstrap
 
 _bootstrap.setup_project(_project)
 _bootstrap.setup_providers()
-_bootstrap.setup_extraction()
+_bootstrap.setup_shared_data()

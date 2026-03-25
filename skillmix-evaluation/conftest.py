@@ -13,4 +13,4 @@ import _bootstrap
 
 _bootstrap.setup_project(_project)
 _bootstrap.setup_providers()
-_bootstrap.setup_eval_grading()
+_bootstrap.setup_skillsbench_evaluation()
