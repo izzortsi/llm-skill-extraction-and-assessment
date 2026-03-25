@@ -49,6 +49,8 @@ def main() -> None:
                         help="Suppress stage subprocess output")
     parser.add_argument("--interactive", "-i", action="store_true",
                         help="Build profile interactively before running")
+    parser.add_argument("--claude-code", action="store_true",
+                        help="Use Claude Code CLI as LLM provider for all roles (zero-setup mode)")
 
     args = parser.parse_args()
 
@@ -77,6 +79,15 @@ def main() -> None:
 
     if args.run_dir:
         profile.run_dir = args.run_dir
+
+    if args.claude_code:
+        profile.extraction_provider = "claude-code"
+        profile.extraction_model = "claude-code"
+        profile.trace_provider = "claude-code"
+        profile.trace_model = "claude-code"
+        profile.judge_provider = "claude-code"
+        profile.judge_model = "claude-code"
+        profile.eval_models = [{"provider": "claude-code", "model": "claude-code"}]
 
     verbose = not args.quiet
 

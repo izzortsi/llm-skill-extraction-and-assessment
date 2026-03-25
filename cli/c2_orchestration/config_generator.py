@@ -27,6 +27,9 @@ def _resolve_litellm_model(entry):
     provider = entry.get("provider", "")
     model = entry["model"]
 
+    if provider == "claude-code":
+        return "claude-code"
+
     if provider == "anthropic":
         return model
 
@@ -50,6 +53,8 @@ def _build_model_entry(entry, profile):
         model_entry["api_key_env"] = "ANTHROPIC_API_KEY"
     elif provider == "ollama":
         model_entry["api_base"] = profile.ollama_url
+    elif provider == "claude-code":
+        model_entry["provider"] = "claude-code"
     else:
         # lmproxy, openai, or unknown default to lmproxy base url
         model_entry["api_base"] = profile.lmproxy_base_url

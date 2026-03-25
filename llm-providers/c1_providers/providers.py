@@ -236,4 +236,13 @@ def create_provider(
             api_key=api_key,
         )
 
+    if provider_name == "claude-code":
+        import sys
+        from pathlib import Path
+        cli_root = Path(__file__).resolve().parent.parent.parent / "llm-skills.cli"
+        if str(cli_root) not in sys.path:
+            sys.path.insert(0, str(cli_root))
+        from c1_tools.claude_code_provider import ClaudeCodeProvider
+        return ClaudeCodeProvider()
+
     raise ValueError(f"Unknown provider: {provider_name}")
