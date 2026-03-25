@@ -15,6 +15,15 @@ from typing import Dict, List
 from c0_config.pipeline_profile import PipelineProfile
 
 
+def _provider_args(provider, model, profile):
+    """Translate a profile provider value into CLI args for a stage."""
+    if provider == "lmproxy":
+        return ["--provider", "openai", "--base-url", profile.lmproxy_base_url, "--model", model]
+    if provider == "ollama":
+        return ["--provider", "openai", "--base-url", profile.ollama_url, "--model", model]
+    return ["--provider", provider, "--model", model]
+
+
 def build_stage_args(
     stage_id: str,
     profile: PipelineProfile,
@@ -54,42 +63,45 @@ def build_stage_args(
         ]
 
     if stage_id == "1b":
-        return [
+        args = [
             "--passages", stage_outputs.get("1a", {}).get("passages", str(stage1_dir / "passages.json")),
             "--domain", profile.domain,
             "--tasks-per-chunk", str(profile.tasks_per_chunk),
-            "--provider", profile.extraction_provider,
-            "--model", profile.extraction_model,
+        ]
+        args += _provider_args(profile.extraction_provider, profile.extraction_model, profile)
+        args += [
             "--output", str(stage1_dir / "tasks.json"),
             "-v",
         ]
+        return args
 
     if stage_id == "2":
-        return [
+        args = [
             "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
             "--output", str(stage2_dir / "traces.jsonl"),
-            "--provider", profile.trace_provider,
-            "--model", profile.trace_model,
-            "-v",
         ]
+        args += _provider_args(profile.trace_provider, profile.trace_model, profile)
+        args.append("-v")
+        return args
 
     if stage_id == "3":
-        return [
+        args = [
             "--traces", stage_outputs.get("2", {}).get("traces", str(stage2_dir / "traces.jsonl")),
             "--output", str(stage3_dir / "skills.json"),
             "--max-skills", str(profile.max_skills),
-            "--provider", profile.extraction_provider,
-            "--model", profile.extraction_model,
-            "-v",
         ]
+        args += _provider_args(profile.extraction_provider, profile.extraction_model, profile)
+        args.append("-v")
+        return args
 
     if stage_id == "4":
         args = [
             "--skills", stage_outputs.get("3", {}).get("skills", str(stage3_dir / "skills.json")),
             "--output", str(stage4_dir / "verified_skills.json"),
             "--revise",
-            "--provider", profile.extraction_provider,
-            "--model", profile.extraction_model,
+        ]
+        args += _provider_args(profile.extraction_provider, profile.extraction_model, profile)
+        args += [
             "--standards-dir", str(repo_root / "b0.standards"),
             "-v",
         ]
@@ -110,7 +122,8 @@ def build_stage_args(
         return args
 
     if stage_id == "5":
-        config_path = repo_root / profile.config_file
+        generated_config = run_dir / "models.yaml"
+        config_path = generated_config if generated_config.exists() else repo_root / profile.config_file
         if config_path.exists():
             args = [
                 "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
@@ -154,7 +167,8 @@ def build_stage_args(
         # report and visualize args are built separately
         stage4b_dir = run_dir / "stage4b-skill-composition"
         stage8_dir = run_dir / "stage8-skillmix-evaluation"
-        config_path = repo_root / profile.config_file
+        generated_config = run_dir / "models.yaml"
+        config_path = generated_config if generated_config.exists() else repo_root / profile.config_file
         args = [
             "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
             "--skills-dir", str(stage4b_dir),
@@ -165,8 +179,7 @@ def build_stage_args(
         if config_path.exists():
             args += ["--config", str(config_path)]
         else:
-            args += ["--base-url", profile.ollama_url, "--provider", "openai"]
-            args += ["--judge-provider", profile.judge_provider, "--judge-model", profile.judge_model]
+            args += _provider_args(profile.judge_provider, profile.judge_model, profile)
         return args
 
     if stage_id == "9":

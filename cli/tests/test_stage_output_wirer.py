@@ -32,3 +32,54 @@ def test_stage5_eval_models_join(tmp_path):
     models_value = args[models_idx + 1]
     assert "qwen2.5-3b" in models_value
     assert "llama3.2:1b" in models_value
+
+
+def test_stage1b_lmproxy_provider_becomes_openai(tmp_path):
+    """When extraction_provider is lmproxy, stage 1b gets --provider openai --base-url."""
+    profile = PipelineProfile()
+    profile.extraction_provider = "lmproxy"
+    profile.extraction_model = "claude-opus-4-6"
+    profile.lmproxy_base_url = "http://proxy:8080/v1"
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    repo_root = tmp_path
+    stage_outputs = {"1a": {"passages": "/tmp/passages.json"}}
+    args = build_stage_args("1b", profile, run_dir, repo_root, stage_outputs)
+    assert "--provider" in args
+    provider_idx = args.index("--provider")
+    assert args[provider_idx + 1] == "openai"
+    assert "--base-url" in args
+    base_idx = args.index("--base-url")
+    assert args[base_idx + 1] == "http://proxy:8080/v1"
+
+
+def test_stage1b_anthropic_direct(tmp_path):
+    """When extraction_provider is anthropic, stage 1b gets --provider anthropic, no --base-url."""
+    profile = PipelineProfile()
+    profile.extraction_provider = "anthropic"
+    profile.extraction_model = "claude-opus-4-6"
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    repo_root = tmp_path
+    stage_outputs = {"1a": {"passages": "/tmp/passages.json"}}
+    args = build_stage_args("1b", profile, run_dir, repo_root, stage_outputs)
+    provider_idx = args.index("--provider")
+    assert args[provider_idx + 1] == "anthropic"
+    assert "--base-url" not in args
+
+
+def test_stage1b_ollama_uses_ollama_url(tmp_path):
+    """When extraction_provider is ollama, stage 1b gets --base-url with ollama_url."""
+    profile = PipelineProfile()
+    profile.extraction_provider = "ollama"
+    profile.extraction_model = "qwen2.5:3b"
+    profile.ollama_url = "http://ollama:11434/v1"
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    repo_root = tmp_path
+    stage_outputs = {"1a": {"passages": "/tmp/passages.json"}}
+    args = build_stage_args("1b", profile, run_dir, repo_root, stage_outputs)
+    provider_idx = args.index("--provider")
+    assert args[provider_idx + 1] == "openai"
+    base_idx = args.index("--base-url")
+    assert args[base_idx + 1] == "http://ollama:11434/v1"
