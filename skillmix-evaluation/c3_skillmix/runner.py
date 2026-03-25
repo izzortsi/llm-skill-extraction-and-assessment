@@ -78,8 +78,9 @@ def run_skillmix_experiment(
             model_cfg.get("provider", "openai"),
             model_cfg.get("model", ""),
             base_url=model_cfg.get("base_url", ""),
+            api_key=model_cfg.get("api_key", ""),
         )
-        model_name = model_cfg.get("model", "unknown")
+        model_name = model_cfg.get("alias", model_cfg.get("model", "unknown"))
 
         if verbose:
             print(f"\nModel: {model_name}")

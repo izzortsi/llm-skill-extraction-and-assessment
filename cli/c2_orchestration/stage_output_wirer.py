@@ -140,21 +140,23 @@ def build_stage_args(
         ]
 
     if stage_id == "8":
-        # stage 8 has two commands; return args for the first (run-skillmix)
-        # report args are built separately via build_stage8_report_args()
+        # stage 8 has three commands; return args for the first (run-skillmix)
+        # report and visualize args are built separately
         stage4b_dir = run_dir / "stage4b-skill-composition"
         stage8_dir = run_dir / "stage8-skillmix-evaluation"
+        config_path = repo_root / profile.config_file
         args = [
             "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
             "--skills-dir", str(stage4b_dir / "atomic-skills-md"),
             "--models", ",".join(profile.eval_models),
-            "--base-url", profile.ollama_url,
-            "--provider", "openai",
-            "--judge-provider", profile.judge_provider,
-            "--judge-model", profile.judge_model,
             "--output-dir", str(stage8_dir),
             "-v",
         ]
+        if config_path.exists():
+            args += ["--config", str(config_path)]
+        else:
+            args += ["--base-url", profile.ollama_url, "--provider", "openai"]
+            args += ["--judge-provider", profile.judge_provider, "--judge-model", profile.judge_model]
         return args
 
     raise ValueError(f"Unknown stage_id: {stage_id}")
