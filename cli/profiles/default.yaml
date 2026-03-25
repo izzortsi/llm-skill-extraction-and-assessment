@@ -48,5 +48,3 @@ compose_k_values:
   - 5
 compose_operators:
   - seq
-  - par
-  - cond

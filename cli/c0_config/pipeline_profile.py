@@ -52,7 +52,7 @@ class PipelineProfile:
 
     # skill composition (stage 4b)
     compose_k_values: List[int] = field(default_factory=lambda: [2, 3, 4, 5])
-    compose_operators: List[str] = field(default_factory=lambda: ["seq", "par", "cond"])
+    compose_operators: List[str] = field(default_factory=lambda: ["seq"])
 
 
 MINIMAL_OVERRIDES = {

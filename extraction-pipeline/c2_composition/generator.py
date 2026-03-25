@@ -82,7 +82,7 @@ def main() -> None:
     parser.add_argument("--atomic-dir", type=Path, required=True, help="Directory with atomic skill .md files")
     parser.add_argument("--output-dir", "-o", type=Path, default=Path("composed-skills"), help="Output directory")
     parser.add_argument("--k", type=int, nargs="+", default=[2, 3, 4, 5], help="K values to generate")
-    parser.add_argument("--operators", type=str, nargs="+", default=["seq", "par", "cond"], help="Operator types to generate (seq, par, cond)")
+    parser.add_argument("--operators", type=str, nargs="+", default=["seq"], help="Operator types to generate (seq, par, cond)")
     parser.add_argument("--semantic", action="store_true", help="Include semantic compositions")
     parser.add_argument("--provider", type=str, default="anthropic", help="Provider for semantic composition")
     parser.add_argument("--model", type=str, default="claude-opus-4-6", help="Model for semantic composition")
