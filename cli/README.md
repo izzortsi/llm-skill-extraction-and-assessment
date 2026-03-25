@@ -9,8 +9,17 @@ Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 ```bash
 cd llm-skills.cli
 
-# minimal end-to-end run (fewest API calls)
+# zero-setup run using Claude Code CLI (no API keys or servers needed)
+python3 -m c4_cli.main run --stages all --minimal --claude-code --clean
+
+# same with a specific model tier
+python3 -m c4_cli.main run --stages all --minimal --claude-code sonnet --clean
+
+# minimal end-to-end run via lmproxy/Ollama (fewest API calls)
 python3 -m c4_cli.main run --stages all --minimal --clean
+
+# interactive setup: discovers providers, prompts for model selection
+python3 -m c4_cli.main config create --interactive
 
 # check environment before running
 python3 -m c4_cli.main setup
@@ -35,6 +44,7 @@ options:
   --minimal            1 chunk, 2 tasks/chunk, 2 skills, k=2, singlecall, 2 models
   --clean              wipe previous output and re-run from scratch
   --interactive        build profile via guided prompts before running
+  --claude-code [TIER] use Claude Code CLI as provider (haiku/sonnet/opus, default: haiku)
   --run-dir PATH       override output directory
   --quiet              suppress stage subprocess output
 ```
@@ -60,10 +70,16 @@ python3 -m c4_cli.main run --stages skillmix
 # single stage
 python3 -m c4_cli.main run --stages 3
 
+# zero-setup with Claude Code (default: haiku)
+python3 -m c4_cli.main run --stages all --minimal --claude-code --clean
+
+# zero-setup with Claude Code opus
+python3 -m c4_cli.main run --stages all --minimal --claude-code opus --clean
+
 # custom profile
 python3 -m c4_cli.main run --profile my-experiment --stages all --clean
 
-# interactive mode: prompts for provider, model, dataset, modes
+# interactive mode: discovers providers, prompts for model selection
 python3 -m c4_cli.main run --interactive
 ```
 
@@ -75,7 +91,7 @@ manage experiment profiles stored as YAML files in `profiles/`.
 python3 -m c4_cli.main config list                  # list saved profiles
 python3 -m c4_cli.main config show default           # display profile config
 python3 -m c4_cli.main config create my-experiment   # create with defaults
-python3 -m c4_cli.main config create --interactive   # create via prompts
+python3 -m c4_cli.main config create --interactive   # create via prompts (discovers providers)
 python3 -m c4_cli.main config delete my-experiment   # delete a profile
 ```
 
@@ -156,6 +172,7 @@ configuration needed for a pipeline run:
 ```yaml
 profile_name: my-experiment
 run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/my-experiment-profile
+lmproxy_base_url: "http://localhost:8080/v1"
 
 # source data (stage 1a)
 dataset: wikimedia/wikipedia
@@ -166,22 +183,26 @@ chunk_size: 4000
 tasks_per_chunk: 2
 
 # extraction model (stages 1b, 3)
-extraction_provider: anthropic
+extraction_provider: lmproxy
 extraction_model: claude-opus-4-6
 
 # trace capture (stage 2)
-trace_provider: anthropic
+trace_provider: lmproxy
 trace_model: claude-opus-4-6
 
 # evaluation (stages 5, 8)
-config_file: llm-skills.llm-providers/configs/models.yaml
+eval_models:
+  - provider: lmproxy
+    model: qwen2.5-3b
+  - provider: ollama
+    model: llama3.2:1b
 modes:
   - singlecall
   - stepwise
   - guided
 
 # judge (stages 5, 8)
-judge_provider: anthropic
+judge_provider: lmproxy
 judge_model: claude-opus-4-6
 
 # skill extraction (stage 3)
@@ -191,13 +212,16 @@ max_skills: 8
 compose_k_values:
   - 2
   - 3
-  - 4
-  - 5
 ```
 
+valid provider values: `lmproxy`, `ollama`, `anthropic`, `openai`, `claude-code`.
+
 the `--minimal` flag overrides any profile with: 1 chunk, 2 tasks/chunk, 2 skills,
-k=2 compositions only, singlecall mode, 2 Ollama models (qwen2.5-3b, qwen2.5-7b),
-no ZAI or Anthropic eval.
+k=2 compositions only, singlecall mode, 2 models.
+
+the `--claude-code` flag overrides all 4 roles (extraction, trace, judge, eval) to
+use Claude Code CLI as the provider. accepts a model tier: `haiku` (default),
+`sonnet`, or `opus`. requires `claude` CLI on PATH. no API keys or servers needed.
 
 ## crash recovery
 
@@ -217,28 +241,49 @@ llm-skills.cli/
         profile_loader.py       YAML load/save for profiles
         stage_runner.py         subprocess execution of individual stages
         output_inspector.py     run directory inspection and crash recovery
-        provider_checker.py     pre-flight provider connectivity checks
+        provider_checker.py     pre-flight provider connectivity checks (lmproxy, ollama, anthropic)
+        provider_discovery.py   runtime provider/model discovery (probes lmproxy, ollama, checks API keys)
+        claude_code_provider.py ClaudeCodeProvider adapter (claude -p subprocess wrapper)
     c2_orchestration/
-        pipeline_executor.py    multi-stage orchestration with dependency resolution
-        stage_output_wirer.py   map profile config to per-stage CLI arguments
+        pipeline_executor.py    multi-stage orchestration with dependency resolution + lmproxy session
+        stage_output_wirer.py   map profile config to per-stage CLI arguments + provider routing
+        config_generator.py     generate models.yaml from profile eval_models
     c4_cli/
         main.py                 entry point: routes run/config/status/setup commands
-        command_run.py          run command implementation
-        command_config.py       config command implementation
+        command_run.py          run command implementation (--claude-code flag)
+        command_config.py       config command implementation (--interactive with discovery)
         command_status.py       status command implementation
         command_setup.py        setup command implementation
-        interactive.py          Rich-powered interactive prompts
+        interactive.py          InquirerPy-powered interactive prompts with provider discovery
         rich_ui.py              Rich UI components (panels, tables, indicators)
     profiles/
         default.yaml            default experiment profile
     conftest.py                 pytest bootstrap
 ```
 
+## providers
+
+the CLI supports 5 LLM provider types:
+
+| provider | what it is | requires |
+|----------|-----------|----------|
+| `lmproxy` | centralized API gateway (default) | lmproxy running at `lmproxy_base_url` |
+| `ollama` | local model server | Ollama running at `ollama_url` |
+| `anthropic` | direct Anthropic API | `ANTHROPIC_API_KEY` env var |
+| `openai` | direct OpenAI API | `OPENAI_API_KEY` env var |
+| `claude-code` | Claude Code CLI subprocess | `claude` on PATH |
+
+the interactive setup (`config create --interactive`) probes all providers at startup
+and shows which are reachable. `--claude-code` is a convenience flag that sets all
+roles to use Claude Code with no additional configuration.
+
 ## dependencies
 
 - Python 3.8+
 - rich (optional, for colored terminal output; degrades to plain text if absent)
+- InquirerPy (optional, for arrow-key selection in interactive mode; falls back to input())
 - pyyaml (for profile loading)
+- requests (for provider discovery probes)
 
 the pipeline projects (llm-skills.extraction-pipeline, llm-skills.skillsbench-evaluation,
 llm-skills.skillmix-evaluation) have their own dependencies (anthropic, openai, datasets,
