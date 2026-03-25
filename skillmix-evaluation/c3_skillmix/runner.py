@@ -17,11 +17,36 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import requests
 import openai
 
 from c2_analytics.summary import compute_summary
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
 from c3_skillmix.harness import run_skillmix_episode, SkillMixEpisode
+
+
+def _lmproxy_base_url() -> str:
+    return os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080")
+
+
+def _ensure_lmproxy_session(worker_id: str = "skillmix-pipeline") -> str:
+    """Register worker and start session with lmproxy. Returns worker_id."""
+    base = _lmproxy_base_url()
+    try:
+        requests.post(f"{base}/register", json={"identifier": worker_id}, timeout=5)
+        requests.post(f"{base}/session/start", json={"worker_id": f"worker-{worker_id}", "service": "openai"}, timeout=5)
+    except Exception:
+        pass  # proxy may not require sessions (direct mode)
+    return f"worker-{worker_id}"
+
+
+def _create_lmproxy_client(worker_id: str) -> openai.OpenAI:
+    """Create an OpenAI client pointed at lmproxy with worker ID header."""
+    return openai.OpenAI(
+        base_url=_lmproxy_base_url(),
+        api_key="lmproxy",
+        default_headers={"X-Worker-ID": worker_id},
+    )
 
 
 class _OpenAIProvider:
@@ -101,14 +126,14 @@ def run_skillmix_experiment(
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Register with lmproxy and start session
+    worker_id = _ensure_lmproxy_session()
+    client = _create_lmproxy_client(worker_id)
+
     total_episodes = len(model_configs) * len(tasks) * (1 + len(skills))
     episode_count = 0
 
     for model_cfg in model_configs:
-        client = openai.OpenAI(
-            base_url=os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080"),
-            api_key="lmproxy",
-        )
         provider = _OpenAIProvider(client, model_cfg.get("model", ""))
         model_name = model_cfg.get("model", "unknown")
 
