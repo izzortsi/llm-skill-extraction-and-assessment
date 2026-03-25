@@ -48,9 +48,8 @@ def test_stage1b_lmproxy_provider_becomes_openai(tmp_path):
     assert "--provider" in args
     provider_idx = args.index("--provider")
     assert args[provider_idx + 1] == "openai"
-    assert "--base-url" in args
-    base_idx = args.index("--base-url")
-    assert args[base_idx + 1] == "http://proxy:8080/v1"
+    # base_url is set via env var, not --base-url CLI arg
+    assert "--base-url" not in args
 
 
 def test_stage1b_anthropic_direct(tmp_path):
@@ -68,8 +67,8 @@ def test_stage1b_anthropic_direct(tmp_path):
     assert "--base-url" not in args
 
 
-def test_stage1b_ollama_uses_ollama_url(tmp_path):
-    """When extraction_provider is ollama, stage 1b gets --base-url with ollama_url."""
+def test_stage1b_ollama_uses_openai_provider(tmp_path):
+    """When extraction_provider is ollama, stage 1b gets --provider openai (base_url via env)."""
     profile = PipelineProfile()
     profile.extraction_provider = "ollama"
     profile.extraction_model = "qwen2.5:3b"
@@ -81,5 +80,13 @@ def test_stage1b_ollama_uses_ollama_url(tmp_path):
     args = build_stage_args("1b", profile, run_dir, repo_root, stage_outputs)
     provider_idx = args.index("--provider")
     assert args[provider_idx + 1] == "openai"
-    base_idx = args.index("--base-url")
-    assert args[base_idx + 1] == "http://ollama:11434/v1"
+    assert "--base-url" not in args
+
+
+def test_provider_env_iosys():
+    """iosys provider_env returns OPENAI_BASE_URL pointing at iosys."""
+    from c2_orchestration.stage_output_wirer import provider_env
+    profile = PipelineProfile()
+    profile.iosys_base_url = "http://llm.iosys.net/v1"
+    env = provider_env("iosys", profile)
+    assert env["OPENAI_BASE_URL"] == "http://llm.iosys.net/v1"
