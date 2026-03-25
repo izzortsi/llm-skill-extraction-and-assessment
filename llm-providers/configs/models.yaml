@@ -1,0 +1,23 @@
+# Model configuration for local development.
+# Ollama models on localhost, Z.AI via API, Anthropic via OAuth.
+
+models:
+  qwen2.5-3b:
+    litellm_model: "openai/qwen2.5:3b"
+    api_base: "http://localhost:11434/v1"
+
+  qwen2.5-7b:
+    litellm_model: "openai/qwen2.5:7b"
+    api_base: "http://localhost:11434/v1"
+
+  glm-5-turbo:
+    litellm_model: "openai/glm-5-turbo"
+    api_base: "https://api.z.ai/api/coding/paas/v4"
+    api_key_env: "ZHIPU_API_KEY"
+
+  claude-opus-4-6:
+    provider: "anthropic"
+    litellm_model: "claude-opus-4-6"
+
+judge:
+  model: "claude-opus-4-6"
