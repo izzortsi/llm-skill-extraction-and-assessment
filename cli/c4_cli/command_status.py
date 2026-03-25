@@ -14,6 +14,7 @@ from pathlib import Path
 
 from c0_config.pipeline_profile import PipelineProfile
 from c1_tools.output_inspector import inspect_run_dir
+from c4_cli.rich_ui import console, print_status_table
 
 
 def main() -> None:
@@ -43,31 +44,9 @@ def main() -> None:
         run_dir = repo_root / run_dir
 
     if not run_dir.exists():
-        print(f"Run directory does not exist: {run_dir}")
-        print(f"Run the pipeline first: llm-skills run --stages all")
+        console.print(f"Run directory does not exist: {run_dir}")
+        console.print(f"Run the pipeline first: [bold]llm-skills run --stages all[/bold]")
         return
 
-    print(f"Run directory: {run_dir}")
-    print()
-
     statuses = inspect_run_dir(run_dir)
-
-    print(f"{'Stage':<6} {'Name':<22} {'Status':<10} {'Output'}")
-    print("-" * 70)
-
-    for s in statuses:
-        if s.is_complete:
-            status_str = "DONE"
-            output_str = ", ".join(s.output_paths)
-        elif len(s.output_paths) > 0:
-            status_str = "PARTIAL"
-            output_str = f"{len(s.output_paths)} of {len(s.output_paths) + len(s.missing_paths)} files"
-        else:
-            status_str = "PENDING"
-            output_str = ""
-
-        print(f"{s.stage_id:<6} {s.name:<22} {status_str:<10} {output_str}")
-
-    done_count = sum(1 for s in statuses if s.is_complete)
-    print()
-    print(f"{done_count} of {len(statuses)} stages complete")
+    print_status_table(str(run_dir), statuses)

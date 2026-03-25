@@ -26,6 +26,7 @@ from c1_tools.profile_loader import (
     delete_profile,
     PROFILES_DIR,
 )
+from c4_cli.rich_ui import console, print_profile, print_profiles_list
 
 
 def main() -> None:
@@ -41,84 +42,34 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.subcommand == "list":
-        _cmd_list()
+        print_profiles_list(list_profiles())
+
     elif args.subcommand == "create":
         if not args.name:
-            print("Usage: llm-skills config create <name>")
+            console.print("Usage: llm-skills config create <name>")
             sys.exit(1)
-        _cmd_create(args.name)
+        profile = PipelineProfile(profile_name=args.name)
+        path = save_profile(profile)
+        console.print(f"Created profile '[cyan]{args.name}[/cyan]' at {path}")
+        console.print(f"Edit the YAML file, then run: [bold]llm-skills run --profile {args.name}[/bold]")
+
     elif args.subcommand == "show":
         if not args.name:
-            print("Usage: llm-skills config show <name>")
+            console.print("Usage: llm-skills config show <name>")
             sys.exit(1)
-        _cmd_show(args.name)
+        try:
+            profile = load_profile(args.name)
+        except FileNotFoundError:
+            console.print(f"Profile '{args.name}' not found in {PROFILES_DIR}")
+            sys.exit(1)
+        print_profile(profile)
+
     elif args.subcommand == "delete":
         if not args.name:
-            print("Usage: llm-skills config delete <name>")
+            console.print("Usage: llm-skills config delete <name>")
             sys.exit(1)
-        _cmd_delete(args.name)
-
-
-def _cmd_list() -> None:
-    profiles = list_profiles()
-    if not profiles:
-        print(f"No profiles found in {PROFILES_DIR}")
-        print(f"Create one: llm-skills config create <name>")
-        return
-
-    print(f"Profiles ({len(profiles)}):")
-    for name in profiles:
-        print(f"  {name}")
-
-
-def _cmd_create(name: str) -> None:
-    profile = PipelineProfile(profile_name=name)
-    path = save_profile(profile)
-    print(f"Created profile '{name}' at {path}")
-    print(f"Edit the YAML file to customize, then run: llm-skills run --profile {name}")
-
-
-def _cmd_show(name: str) -> None:
-    try:
-        profile = load_profile(name)
-    except FileNotFoundError:
-        print(f"Profile '{name}' not found in {PROFILES_DIR}")
-        sys.exit(1)
-
-    print(f"Profile: {profile.profile_name}")
-    print(f"  run_dir:              {profile.run_dir}")
-    print()
-    print(f"  Source:")
-    print(f"    dataset:            {profile.dataset}")
-    print(f"    subset:             {profile.subset}")
-    print(f"    domain:             {profile.domain}")
-    print(f"    max_chunks:         {profile.max_chunks}")
-    print(f"    chunk_size:         {profile.chunk_size}")
-    print(f"    tasks_per_chunk:    {profile.tasks_per_chunk}")
-    print()
-    print(f"  Extraction:")
-    print(f"    provider:           {profile.extraction_provider}")
-    print(f"    model:              {profile.extraction_model}")
-    print(f"    max_skills:         {profile.max_skills}")
-    print()
-    print(f"  Trace capture:")
-    print(f"    provider:           {profile.trace_provider}")
-    print(f"    model:              {profile.trace_model}")
-    print()
-    print(f"  Evaluation:")
-    print(f"    config_file:        {profile.config_file}")
-    print(f"    modes:              {', '.join(profile.modes)}")
-    print(f"    eval_models:        {', '.join(profile.eval_models)}")
-    print(f"    ollama_url:         {profile.ollama_url}")
-    print()
-    print(f"  Judge:")
-    print(f"    provider:           {profile.judge_provider}")
-    print(f"    model:              {profile.judge_model}")
-
-
-def _cmd_delete(name: str) -> None:
-    if delete_profile(name):
-        print(f"Deleted profile '{name}'")
-    else:
-        print(f"Profile '{name}' not found")
-        sys.exit(1)
+        if delete_profile(args.name):
+            console.print(f"Deleted profile '[cyan]{args.name}[/cyan]'")
+        else:
+            console.print(f"Profile '{args.name}' not found")
+            sys.exit(1)

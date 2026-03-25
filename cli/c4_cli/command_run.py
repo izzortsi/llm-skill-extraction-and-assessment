@@ -12,7 +12,6 @@ Options:
     --clean              Wipe previous output and re-run
     --minimal            Override profile with minimal settings
     --run-dir PATH       Override run directory
-    --verbose            Verbose output (default: True)
     --quiet              Suppress stage output
 """
 
@@ -25,6 +24,7 @@ from pathlib import Path
 from c0_config.pipeline_profile import PipelineProfile, apply_minimal
 from c1_tools.profile_loader import load_profile, PROFILES_DIR
 from c2_orchestration.pipeline_executor import execute_pipeline
+from c4_cli.rich_ui import print_header, print_summary
 
 
 def main() -> None:
@@ -47,21 +47,17 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # resolve repo root (parent of llm-skills.cli/)
     repo_root = Path(__file__).resolve().parent.parent.parent
 
-    # load or create profile
     if args.profile:
         try:
             profile = load_profile(args.profile)
         except FileNotFoundError:
             print(f"Profile '{args.profile}' not found in {PROFILES_DIR}")
-            print(f"Available profiles: {', '.join(_list_profiles())}")
             sys.exit(1)
     else:
         profile = PipelineProfile()
 
-    # apply overrides
     if args.minimal:
         apply_minimal(profile)
 
@@ -70,18 +66,14 @@ def main() -> None:
 
     verbose = not args.quiet
 
-    # print header
-    print(f"llm-skills pipeline")
-    print(f"  profile:  {profile.profile_name}")
-    print(f"  stages:   {args.stages}")
-    print(f"  run_dir:  {profile.run_dir}")
-    if args.minimal:
-        print(f"  mode:     MINIMAL (1 chunk, 1 task/chunk, 3 skills, singlecall, 1 model)")
-    if args.clean:
-        print(f"  clean:    yes (wipe previous output)")
-    print()
+    print_header(
+        profile_name=profile.profile_name,
+        stages=args.stages,
+        run_dir=profile.run_dir,
+        is_minimal=args.minimal,
+        is_clean=args.clean,
+    )
 
-    # execute
     results = execute_pipeline(
         profile=profile,
         stage_range=args.stages,
@@ -90,31 +82,4 @@ def main() -> None:
         verbose=verbose,
     )
 
-    # summary
-    print()
-    print("=" * 60)
-    print("Pipeline Summary")
-    print("=" * 60)
-
-    total_time = 0.0
-    failed = 0
-    skipped = 0
-
-    for r in results:
-        status = "OK"
-        if r.exit_code != 0:
-            status = "FAILED"
-            failed += 1
-        elif r.command == "(skipped)":
-            status = "SKIP"
-            skipped += 1
-
-        total_time += r.duration_seconds
-        print(f"  stage {r.stage_id:<4} {status:<8} {r.duration_seconds:>6.1f}s  {r.command}")
-
-    print(f"\nTotal: {len(results)} stages, {failed} failed, {skipped} skipped, {total_time:.1f}s")
-
-
-def _list_profiles():
-    from c1_tools.profile_loader import list_profiles
-    return list_profiles()
+    print_summary(results)
