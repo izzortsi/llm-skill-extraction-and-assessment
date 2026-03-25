@@ -217,6 +217,9 @@ def execute_pipeline(
             ui_stage_complete(stage_id, result.duration_seconds)
             results.append(result)
 
+        # post-stage: convert JSON outputs to markdown for reuse
+        _convert_stage_outputs_to_markdown(stage_id, run_dir, pipeline_dir, logs_dir, verbose)
+
         # register outputs
         stage_outputs[stage_id] = register_stage_outputs(stage_id, run_dir)
 
@@ -249,6 +252,39 @@ def _stage_output_exists(stage, run_dir: Path, profile: PipelineProfile) -> bool
         if not path.exists():
             return False
     return True
+
+
+_MARKDOWN_CONVERSIONS = {
+    "1b": ("tasks", "stage1-task-extraction/tasks.json", "stage1-task-extraction/tasks-md", "tasks-to-md"),
+    "3": ("skills", "stage3-skill-extraction/skills.json", "stage3-skill-extraction/skills-md", "skills-to-md"),
+    "4": ("skills", "stage4-skill-verification/verified_skills.json", "stage4-skill-verification/verified-skills-md", "skills-to-md"),
+}
+
+
+def _convert_stage_outputs_to_markdown(stage_id, run_dir, pipeline_dir, logs_dir, verbose):
+    """Convert JSON stage output to markdown files for human review and reuse."""
+    if stage_id not in _MARKDOWN_CONVERSIONS:
+        return
+
+    entity_type, json_rel, md_dir_rel, format_cmd = _MARKDOWN_CONVERSIONS[stage_id]
+    json_path = run_dir / json_rel
+    md_dir = run_dir / md_dir_rel
+
+    if not json_path.exists():
+        return
+    if md_dir.exists() and list(md_dir.glob("*.md")):
+        return  # already converted
+
+    ui_info(f"converting {entity_type} to markdown: {md_dir_rel}/")
+    format_args = [format_cmd, "--input", str(json_path), "--output-dir", str(md_dir)]
+    log_path = logs_dir / f"stage{stage_id}-format-md.log"
+    run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="format",
+        args=format_args,
+        log_path=log_path,
+        verbose=False,
+    )
 
 
 def _execute_stage4b(stage, profile, run_dir, repo_root, pipeline_dir,
