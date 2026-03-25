@@ -237,21 +237,22 @@ def create_provider(
         )
 
     if provider_name == "claude-code":
-        import sys
+        import importlib.util
         from pathlib import Path
-        # Walk up from providers.py to find repo root (contains llm-skills.cli/)
+        # Direct file import to avoid c1_tools namespace collision with other pipelines
         candidate = Path(__file__).resolve().parent
-        cli_root = None
+        adapter_path = None
         for _i in range(6):
             candidate = candidate.parent
-            if (candidate / "llm-skills.cli" / "c1_tools").is_dir():
-                cli_root = candidate / "llm-skills.cli"
+            path = candidate / "llm-skills.cli" / "c1_tools" / "claude_code_provider.py"
+            if path.is_file():
+                adapter_path = path
                 break
-        if cli_root is None:
-            raise RuntimeError("cannot locate llm-skills.cli relative to providers.py")
-        if str(cli_root) not in sys.path:
-            sys.path.insert(0, str(cli_root))
-        from c1_tools.claude_code_provider import ClaudeCodeProvider
-        return ClaudeCodeProvider(model=model)
+        if adapter_path is None:
+            raise RuntimeError("cannot locate llm-skills.cli/c1_tools/claude_code_provider.py")
+        spec = importlib.util.spec_from_file_location("claude_code_provider", str(adapter_path))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.ClaudeCodeProvider(model=model)
 
     raise ValueError(f"Unknown provider: {provider_name}")
