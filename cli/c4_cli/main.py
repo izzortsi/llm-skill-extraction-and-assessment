@@ -40,14 +40,14 @@ Commands:
   setup     Pre-flight checks and environment validation
 
 Examples:
-  ./llm-skills run --stages all --minimal --clean
-  ./llm-skills run --stages 1-4 --profile my-experiment
-  ./llm-skills run --stages evaluation
-  ./llm-skills run --interactive
-  ./llm-skills config list
-  ./llm-skills config create --interactive
-  ./llm-skills status
-  ./llm-skills setup
+  python3 -m c4_cli.main run --stages all --minimal --clean
+  python3 -m c4_cli.main run --stages 1-4 --profile my-experiment
+  python3 -m c4_cli.main run --stages evaluation
+  python3 -m c4_cli.main run --interactive
+  python3 -m c4_cli.main config list
+  python3 -m c4_cli.main config create --interactive
+  python3 -m c4_cli.main status
+  python3 -m c4_cli.main setup
 """,
     )
     parser.add_argument("command", help="Command to run")
