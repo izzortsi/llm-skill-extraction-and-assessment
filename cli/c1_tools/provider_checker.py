@@ -54,6 +54,23 @@ def check_lmproxy(url: str) -> CheckResult:
         return CheckResult("lmproxy", False, f"unreachable: {exc}")
 
 
+def check_lm_studio(url: str) -> CheckResult:
+    """Check LM Studio local server."""
+    try:
+        import urllib.request
+        base = url.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[:-3]
+        endpoint = f"{base}/v1/models"
+        req = urllib.request.Request(endpoint, method="GET")
+        resp = urllib.request.urlopen(req, timeout=5)
+        if resp.status == 200:
+            return CheckResult("lm-studio", True, f"reachable at {url}")
+        return CheckResult("lm-studio", False, f"{endpoint} returned {resp.status}")
+    except Exception as exc:
+        return CheckResult("lm-studio", False, f"unreachable: {exc}")
+
+
 def check_iosys(url: str) -> CheckResult:
     """Check iosys LLM inference API."""
     try:
@@ -153,5 +170,20 @@ def run_preflight_checks(profile) -> List[CheckResult]:
         )
         if uses_iosys:
             results.append(check_iosys(profile.iosys_base_url))
+
+    # lm-studio check
+    if hasattr(profile, "lm_studio_url") and profile.lm_studio_url:
+        uses_lm_studio = (
+            getattr(profile, "extraction_provider", "") == "lm-studio"
+            or getattr(profile, "trace_provider", "") == "lm-studio"
+            or getattr(profile, "judge_provider", "") == "lm-studio"
+            or any(
+                entry.get("provider") == "lm-studio"
+                for entry in getattr(profile, "eval_models", [])
+                if isinstance(entry, dict)
+            )
+        )
+        if uses_lm_studio:
+            results.append(check_lm_studio(profile.lm_studio_url))
 
     return results

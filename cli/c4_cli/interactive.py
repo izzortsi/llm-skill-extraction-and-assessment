@@ -293,8 +293,58 @@ def select_provider(role_label: str, providers: list, default_provider: str = ""
         print("  Invalid choice (provider unreachable or out of range).")
 
 
+CLAUDE_CODE_TIERS = [
+    ("haiku  (claude-haiku-4-5-20251001)", "claude-haiku-4-5-20251001"),
+    ("sonnet (claude-sonnet-4-6)", "claude-sonnet-4-6"),
+    ("opus   (claude-opus-4-6)", "claude-opus-4-6"),
+]
+
+
+def _select_claude_code_tier(role_label: str, default_model: str = "") -> str:
+    """Pick a Claude Code model tier (haiku/sonnet/opus)."""
+    tier_names = [t[0] for t in CLAUDE_CODE_TIERS]
+    tier_values = [t[1] for t in CLAUDE_CODE_TIERS]
+
+    if not default_model or default_model == "claude-code":
+        default_model = "claude-haiku-4-5-20251001"
+
+    if HAS_INQUIRER:
+        iq_choices = [Choice(value=v, name=n) for n, v in CLAUDE_CODE_TIERS]
+        result = inquirer.select(
+            message=f"{role_label} model (claude-code)",
+            choices=iq_choices,
+            default=default_model if default_model in tier_values else None,
+        ).execute()
+        return result
+
+    # Fallback
+    print(f"\n  {role_label} model (claude-code)")
+    for i, name in enumerate(tier_names):
+        print(f"    {i + 1}. {name}")
+
+    default_display = ""
+    if default_model in tier_values:
+        default_display = str(tier_values.index(default_model) + 1)
+
+    while True:
+        raw = input(f"  Enter number [{default_display}]: ").strip()
+        if not raw and default_display:
+            return tier_values[int(default_display) - 1]
+        try:
+            idx = int(raw) - 1
+            if 0 <= idx < len(tier_values):
+                return tier_values[idx]
+        except (ValueError, IndexError):
+            pass
+        print("  Invalid choice, try again.")
+
+
 def select_model(role_label: str, provider_status, default_model: str = "") -> str:
     """Select one model from a provider's model list + custom option."""
+    # claude-code: show tier picker (no custom option — tiers are exhaustive)
+    if provider_status and provider_status.name == "claude-code":
+        return _select_claude_code_tier(role_label, default_model)
+
     CUSTOM_SENTINEL = "__custom__"
     models = list(provider_status.models) if provider_status.models else []
     choices = models + ["[ enter custom model name ]"]
@@ -413,21 +463,24 @@ def select_eval_models(providers: list) -> List[Dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
-    """Re-run discovery if the user changed lmproxy or ollama URLs."""
+    """Re-run discovery if the user changed any provider URL."""
     from c1_tools.provider_discovery import discover_providers
     from pathlib import Path
 
-    lmproxy_p = _provider_by_name(providers, "lmproxy")
-    ollama_p = _provider_by_name(providers, "ollama")
-
-    old_lmproxy = lmproxy_p.base_url if lmproxy_p else ""
-    old_ollama = ollama_p.base_url if ollama_p else ""
-
+    url_checks = [
+        ("lmproxy", "lmproxy_base_url"),
+        ("ollama", "ollama_url"),
+        ("iosys", "iosys_base_url"),
+        ("lm-studio", "lm_studio_url"),
+    ]
     changed = False
-    if profile.lmproxy_base_url != old_lmproxy:
-        changed = True
-    if profile.ollama_url != old_ollama:
-        changed = True
+    for provider_name, profile_field in url_checks:
+        p = _provider_by_name(providers, provider_name)
+        old_url = p.base_url if p else ""
+        new_url = getattr(profile, profile_field, "")
+        if new_url != old_url:
+            changed = True
+            break
 
     if not changed:
         return providers
@@ -438,6 +491,8 @@ def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
     new_providers = discover_providers(
         lmproxy_url=profile.lmproxy_base_url,
         ollama_url=profile.ollama_url,
+        iosys_url=profile.iosys_base_url,
+        lm_studio_url=profile.lm_studio_url,
         config_file=str(cfg_path) if cfg_path.exists() else "",
     )
     _display_discovery_summary(new_providers)
@@ -471,23 +526,27 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
                 default_provider_name = p.name
                 break
 
+    HINT = "(ENTER to confirm default)"
+
     # Step 1: URLs
-    _section(1, "Provider URLs")
+    _section(1, f"Provider URLs  {HINT}")
     profile.lmproxy_base_url = _text_input("lmproxy URL", profile.lmproxy_base_url)
     profile.ollama_url = _text_input("Ollama URL", profile.ollama_url)
+    profile.iosys_base_url = _text_input("iosys URL", profile.iosys_base_url)
+    profile.lm_studio_url = _text_input("LM Studio URL", profile.lm_studio_url)
 
     # Re-probe if URLs changed
     provider_statuses = _reprobe_if_changed(provider_statuses, profile)
 
     # Step 2: Extraction provider + model
-    _section(2, "Extraction Model")
+    _section(2, f"Extraction Model  {HINT}")
     profile.extraction_provider = select_provider("Extraction", provider_statuses, default_provider_name)
     ext_p = _provider_by_name(provider_statuses, profile.extraction_provider)
     ext_default_model = ext_p.models[0] if (ext_p and ext_p.models) else ""
     profile.extraction_model = select_model("Extraction", ext_p, ext_default_model)
 
     # Step 3: Trace provider + model (default: same as extraction)
-    _section(3, "Trace Capture Model")
+    _section(3, f"Trace Capture Model  {HINT}")
     profile.trace_provider = select_provider("Trace", provider_statuses, profile.extraction_provider)
     trace_p = _provider_by_name(provider_statuses, profile.trace_provider)
     trace_default = profile.extraction_model if profile.trace_provider == profile.extraction_provider else ""
@@ -496,7 +555,7 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.trace_model = select_model("Trace", trace_p, trace_default)
 
     # Step 4: Judge provider + model (default: same as trace)
-    _section(4, "Judge Model")
+    _section(4, f"Judge Model  {HINT}")
     profile.judge_provider = select_provider("Judge", provider_statuses, profile.trace_provider)
     judge_p = _provider_by_name(provider_statuses, profile.judge_provider)
     judge_default = profile.trace_model if profile.judge_provider == profile.trace_provider else ""
@@ -505,11 +564,11 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.judge_model = select_model("Judge", judge_p, judge_default)
 
     # Step 5: Eval models (multi-select)
-    _section(5, "Evaluation Models")
+    _section(5, "Evaluation Models  (SPACE to toggle, ENTER to confirm)")
     profile.eval_models = select_eval_models(provider_statuses)
 
     # Step 6: Source data
-    _section(6, "Source Data")
+    _section(6, f"Source Data  {HINT}")
     profile.dataset = _text_input("Dataset (HuggingFace identifier)", profile.dataset)
     profile.subset = _text_input("Subset", profile.subset)
     profile.domain = _text_input("Domain label", profile.domain)
@@ -518,7 +577,7 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.tasks_per_chunk = _int_input("Tasks per chunk", profile.tasks_per_chunk)
 
     # Step 7: Skills config
-    _section(7, "Skills Configuration")
+    _section(7, f"Skills Configuration  {HINT}")
     profile.max_skills = _int_input("Max skills to extract", profile.max_skills)
 
     compose_k_raw = _text_input("Compose k values (comma-separated ints)", ",".join(str(k) for k in profile.compose_k_values))
@@ -536,12 +595,12 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.compose_operators = [s.strip() for s in compose_ops_raw.split(",") if s.strip()]
 
     # Step 8: Modes
-    _section(8, "Evaluation Modes")
+    _section(8, "Evaluation Modes  (SPACE to toggle, ENTER to confirm)")
     all_modes = ["singlecall", "stepwise", "guided"]
     profile.modes = _select_many("Select evaluation modes", all_modes, profile.modes)
 
     # Step 9: Profile name
-    _section(9, "Save")
+    _section(9, f"Save  {HINT}")
     profile.profile_name = _text_input("Profile name", profile.profile_name)
 
     return profile
