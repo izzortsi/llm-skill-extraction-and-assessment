@@ -52,7 +52,7 @@ def _check_stage_complete(stage: PipelineStage, run_dir: Path) -> tuple:
         # dynamic output: check if output_dir contains any files
         output_dir = run_dir / stage.output_dir
         if output_dir.exists():
-            found_files = list(output_dir.rglob("*.json")) + list(output_dir.rglob("*.png"))
+            found_files = list(output_dir.rglob("*.json")) + list(output_dir.rglob("*.png")) + list(output_dir.rglob("*.md"))
             if len(found_files) > 0:
                 existing = [str(f) for f in found_files[:5]]  # cap at 5 for display
                 is_complete = True
