@@ -139,6 +139,24 @@ def build_stage_args(
             "-v",
         ]
 
+    if stage_id == "8":
+        # stage 8 has two commands; return args for the first (run-skillmix)
+        # report args are built separately via build_stage8_report_args()
+        stage4b_dir = run_dir / "stage4b-skill-composition"
+        stage8_dir = run_dir / "stage8-skillmix-evaluation"
+        args = [
+            "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
+            "--skills-dir", str(stage4b_dir / "atomic-skills-md"),
+            "--models", ",".join(profile.eval_models),
+            "--base-url", profile.ollama_url,
+            "--provider", "openai",
+            "--judge-provider", profile.judge_provider,
+            "--judge-model", profile.judge_model,
+            "--output-dir", str(stage8_dir),
+            "-v",
+        ]
+        return args
+
     raise ValueError(f"Unknown stage_id: {stage_id}")
 
 
@@ -157,6 +175,29 @@ def build_stage7_csv_args(
         "--passages", stage_outputs.get("1a", {}).get("passages", str(stage1_dir / "passages.json")),
         "--output-dir", str(run_dir / "csv"),
         "-v",
+    ]
+
+
+def build_stage8_report_args(
+    run_dir: Path,
+) -> List[str]:
+    """Build args for stage 8's second command (report)."""
+    stage8_dir = run_dir / "stage8-skillmix-evaluation"
+    return [
+        "--results-dir", str(stage8_dir),
+        "--output", str(stage8_dir / "report.txt"),
+    ]
+
+
+def build_stage8_visualize_args(
+    run_dir: Path,
+) -> List[str]:
+    """Build args for stage 8's third command (visualize)."""
+    stage8_dir = run_dir / "stage8-skillmix-evaluation"
+    return [
+        "--results-dir", str(stage8_dir),
+        "--output-dir", str(stage8_dir / "charts"),
+        "--dpi", "200",
     ]
 
 

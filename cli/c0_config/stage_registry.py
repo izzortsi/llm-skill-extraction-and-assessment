@@ -100,6 +100,16 @@ STAGES = [
         output_files=["traceability-report.txt", "csv/skills.csv"],
         depends_on=["1a", "1b", "4"],
     ),
+    PipelineStage(
+        stage_id="8",
+        name="skillmix-evaluation",
+        description="Evaluate composed skill injection via SkillMix benchmark",
+        pipeline_dir="llm-skills.skillmix-evaluation",
+        commands=["run-skillmix", "report", "visualize"],
+        output_dir="stage8-skillmix-evaluation",
+        output_files=["episodes.json", "summary.json"],
+        depends_on=["1b", "4b"],
+    ),
 ]
 
 
@@ -140,14 +150,16 @@ def parse_stage_range(range_str: str) -> list:
     """Parse a stage range string into a list of stage IDs.
 
     Accepted formats:
-        "all"          -> ["1a", "1b", "2", "3", "4", "4b", "5", "6", "7"]
+        "all"          -> ["1a", "1b", "2", "3", "4", "4b", "5", "6", "7", "8"]
         "1-4"          -> ["1a", "1b", "2", "3", "4"]
         "1-4b"         -> ["1a", "1b", "2", "3", "4", "4b"]
-        "5-7"          -> ["5", "6", "7"]
+        "5-8"          -> ["5", "6", "7", "8"]
         "1a,1b,5"      -> ["1a", "1b", "5"]
         "3"            -> ["3"]
         "extraction"   -> ["1a", "1b", "2", "3", "4", "4b"]
-        "evaluation"   -> ["5", "6", "7"]
+        "evaluation"   -> ["5", "6", "7", "8"]
+        "skillsbench"  -> ["5", "6"]
+        "skillmix"     -> ["8"]
     """
     range_str = range_str.strip().lower()
 
@@ -158,7 +170,13 @@ def parse_stage_range(range_str: str) -> list:
         return ["1a", "1b", "2", "3", "4", "4b"]
 
     if range_str == "evaluation":
-        return ["5", "6", "7"]
+        return ["5", "6", "7", "8"]
+
+    if range_str == "skillsbench":
+        return ["5", "6"]
+
+    if range_str == "skillmix":
+        return ["8"]
 
     # comma-separated list
     if "," in range_str:
@@ -186,4 +204,4 @@ def parse_stage_range(range_str: str) -> list:
     if range_str in STAGE_MAP:
         return [range_str]
 
-    raise ValueError(f"Cannot parse stage range '{range_str}'. Use: all, 1-4, 5-7, 1a,1b,5, extraction, evaluation")
+    raise ValueError(f"Cannot parse stage range '{range_str}'. Use: all, 1-4, 5-8, 1a,1b,5, extraction, evaluation, skillsbench, skillmix")

@@ -17,7 +17,7 @@ extraction_model: claude-opus-4-6
 trace_provider: anthropic
 trace_model: claude-opus-4-6
 
-# evaluation (stage 5)
+# evaluation (stages 5, 8)
 config_file: llm-skills.llm-providers/configs/models.yaml
 ollama_url: http://localhost:11434/v1
 eval_models:
@@ -33,7 +33,7 @@ zai_model: glm-5-turbo
 zai_base_url: https://api.z.ai/api/coding/paas/v4
 anthropic_eval_model: claude-opus-4-6
 
-# judge (stage 5)
+# judge (stages 5, 8)
 judge_provider: anthropic
 judge_model: claude-opus-4-6
 

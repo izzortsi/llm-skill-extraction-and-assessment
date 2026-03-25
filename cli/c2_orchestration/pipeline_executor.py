@@ -18,6 +18,8 @@ from c1_tools.stage_runner import StageResult, run_stage_command
 from c2_orchestration.stage_output_wirer import (
     build_stage_args,
     build_stage7_csv_args,
+    build_stage8_report_args,
+    build_stage8_visualize_args,
     register_stage_outputs,
 )
 
@@ -192,6 +194,12 @@ def execute_pipeline(
             results.append(stage_result)
         elif stage_id == "7":
             stage_results = _execute_stage7(
+                stage, profile, run_dir, repo_root, pipeline_dir,
+                logs_dir, stage_outputs, verbose, print_fn,
+            )
+            results.extend(stage_results)
+        elif stage_id == "8":
+            stage_results = _execute_stage8(
                 stage, profile, run_dir, repo_root, pipeline_dir,
                 logs_dir, stage_outputs, verbose, print_fn,
             )
@@ -486,4 +494,57 @@ def _execute_stage7(stage, profile, run_dir, repo_root, pipeline_dir,
     results.append(csv_result)
 
     ui_stage_complete("7", result.duration_seconds + csv_result.duration_seconds)
+    return results
+
+
+def _execute_stage8(stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn):
+    """Execute stage 8 (SkillMix evaluation + report + visualization)."""
+    results = []
+
+    # command 1: run-skillmix
+    args = build_stage_args("8", profile, run_dir, repo_root, stage_outputs)
+    log_path = logs_dir / "stage8-skillmix.log"
+    result = run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="run-skillmix",
+        args=args,
+        log_path=log_path,
+        verbose=verbose,
+    )
+    result.stage_id = "8"
+    results.append(result)
+
+    if result.exit_code != 0:
+        ui_stage_fail("8", result.exit_code, result.log_path)
+        return results
+
+    # command 2: report
+    report_args = build_stage8_report_args(run_dir)
+    report_log_path = logs_dir / "stage8-report.log"
+    report_result = run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="report",
+        args=report_args,
+        log_path=report_log_path,
+        verbose=verbose,
+    )
+    report_result.stage_id = "8"
+    results.append(report_result)
+
+    # command 3: visualize (charts)
+    viz_args = build_stage8_visualize_args(run_dir)
+    viz_log_path = logs_dir / "stage8-visualize.log"
+    viz_result = run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="visualize",
+        args=viz_args,
+        log_path=viz_log_path,
+        verbose=verbose,
+    )
+    viz_result.stage_id = "8"
+    results.append(viz_result)
+
+    total_time = result.duration_seconds + report_result.duration_seconds + viz_result.duration_seconds
+    ui_stage_complete("8", total_time)
     return results

@@ -1,7 +1,7 @@
 # llm-skills.skillsbench-evaluation
 
 corpus-based evaluation measuring whether skill injection improves LLM task performance.
-stage 5 of the llm-skills pipeline.
+stages 5-6 of the llm-skills pipeline.
 
 ## what this project does
 
@@ -16,8 +16,8 @@ generates heatmaps and charts comparing baseline vs curated pass rates across mo
 
 ```bash
 cd llm-skills.skillsbench-evaluation
-python -m c4_cli.main run-skillsbench --help  # run corpus evaluation
-python -m c4_cli.main heatmaps       --help  # generate visualizations
+python -m c4_cli.main run-skillsbench --help  # run corpus evaluation (stage 5)
+python -m c4_cli.main heatmaps       --help  # generate visualizations (stage 6)
 ```
 
 ## examples
@@ -25,8 +25,8 @@ python -m c4_cli.main heatmaps       --help  # generate visualizations
 ```bash
 # evaluate with config-driven model routing
 python -m c4_cli.main run-skillsbench \
-    --tasks ../llm-skills.shared-data/skillmix-pipeline-run/stage1-task-extraction/tasks.json \
-    --skills ../llm-skills.shared-data/skillmix-pipeline-run/stage4-skill-verification/verified_skills.json \
+    --tasks ../llm-skills.extraction-pipeline/pipeline-runs/default/stage1-task-extraction/tasks.json \
+    --skills ../llm-skills.extraction-pipeline/pipeline-runs/default/stage4-skill-verification/verified_skills.json \
     --config ../llm-skills.llm-providers/configs/models.yaml \
     --mode singlecall \
     --output results.json -v
@@ -51,4 +51,4 @@ tests/             test_litellm_provider, test_model_config
 ## dependencies
 
 - llm-skills.llm-providers (LLM provider abstraction, model config)
-- llm-skills.shared-data (ExtractedTask, ExtractedSkill types via c1_types/)
+- llm-skills.extraction-pipeline (ExtractedTask, ExtractedSkill types via c1_types/)

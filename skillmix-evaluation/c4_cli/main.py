@@ -9,6 +9,7 @@ Usage:
 Commands:
     run-skillmix    Run SkillMix benchmark (multi-model, LLM-as-judge)
     report          Generate SkillMix report from results
+    visualize       Generate charts from SkillMix results
 """
 
 from __future__ import annotations
@@ -38,9 +39,11 @@ def main() -> None:
     # Register subcommands
     from c4_cli.run_skillmix import add_parser as add_run_skillmix
     from c4_cli.report import add_parser as add_report
+    from c4_cli.visualize import add_parser as add_visualize
 
     add_run_skillmix(subparsers)
     add_report(subparsers)
+    add_visualize(subparsers)
 
     args = parser.parse_args()
 
