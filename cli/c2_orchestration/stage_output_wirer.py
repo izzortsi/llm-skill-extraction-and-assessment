@@ -155,7 +155,7 @@ def build_stage_args(
         config_path = repo_root / profile.config_file
         args = [
             "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
-            "--skills-dir", str(stage4b_dir / "atomic-skills-md"),
+            "--skills-dir", str(stage4b_dir),
             "--models", ",".join(profile.eval_models),
             "--output-dir", str(stage8_dir),
             "-v",
