@@ -1,6 +1,6 @@
 # llm-skills.cli
 
-unified CLI for the llm-skills pipeline suite. orchestrates all 10 pipeline stages
+unified CLI for the llm-skills pipeline suite. orchestrates all 11 pipeline stages
 (1a, 1b, 2-8) across 5 separate pipeline projects via subprocess isolation, with
 Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 
@@ -31,7 +31,7 @@ python3 -m c4_cli.main run [options]
 options:
   --stages RANGE       all, 1-4, 5-8, extraction, evaluation, skillsbench, skillmix, 1a,3,5
   --profile NAME       named profile from profiles/ directory
-  --minimal            1 chunk, 1 task/chunk, 3 skills, singlecall, 1 model
+  --minimal            1 chunk, 1 task/chunk, 2 skills, singlecall, 2 models
   --clean              wipe previous output and re-run from scratch
   --interactive        build profile via guided prompts before running
   --run-dir PATH       override output directory
@@ -47,13 +47,13 @@ python3 -m c4_cli.main run --stages all
 # extraction only (stages 1a through 4)
 python3 -m c4_cli.main run --stages extraction
 
-# evaluation only (stages 5-8, requires prior extraction output)
+# evaluation only (stages 5-9, requires prior extraction output)
 python3 -m c4_cli.main run --stages evaluation
 
 # skillsbench only (stages 5-6)
 python3 -m c4_cli.main run --stages skillsbench
 
-# skillmix only (stage 8, requires stages 1b + 4b output)
+# skillmix only (stages 8-9, requires stages 1b + 4b output)
 python3 -m c4_cli.main run --stages skillmix
 
 # single stage
@@ -102,13 +102,13 @@ python3 -m c4_cli.main setup --profile my-experiment
 the `--stages` flag accepts these formats:
 
 ```
-all           all 10 stages (1a, 1b, 2, 3, 4, 4b, 5, 6, 7, 8)
+all           all 11 stages (1a, 1b, 2, 3, 4, 4b, 5, 6, 7, 8)
 extraction    stages 1a through 4b (text + skill extraction + composition)
-evaluation    stages 5 through 8 (eval + viz + traceability + skillmix)
+evaluation    stages 5 through 9 (eval + viz + traceability + skillmix)
 skillsbench   stages 5-6 (skillsbench eval + visualization)
-skillmix      stage 8 (skillmix eval + report + charts)
+skillmix      stages 8-9 (skillmix eval + report + visualization)
 1-4           range from stage 1a to stage 4
-5-8           range from stage 5 to stage 8
+5-9           range from stage 5 to stage 9
 1a,1b,5       comma-separated specific stages
 3             single stage
 ```
@@ -127,7 +127,8 @@ stage  name                pipeline project                      commands
 5      corpus-evaluation   llm-skills.skillsbench-evaluation     run-skillsbench
 6      visualization       llm-skills.skillsbench-evaluation     heatmaps
 7      traceability        llm-skills.extraction-pipeline        traceability-report, export-csv
-8      skillmix-evaluation llm-skills.skillmix-evaluation        run-skillmix, report, visualize
+8      skillmix-evaluation  llm-skills.skillmix-evaluation        run-skillmix, report
+9      skillmix-viz         llm-skills.skillmix-evaluation        visualize
 ```
 
 each stage runs as a subprocess inside its pipeline directory:
@@ -177,8 +178,8 @@ judge_model: claude-opus-4-6
 max_skills: 8
 ```
 
-the `--minimal` flag overrides any profile with: 1 chunk, 1 task/chunk, 3 skills,
-singlecall mode only, 1 Ollama model (qwen2.5:3b), no ZAI or Anthropic eval.
+the `--minimal` flag overrides any profile with: 1 chunk, 1 task/chunk, 2 skills,
+singlecall mode only, 2 Ollama models (qwen2.5-3b, qwen2.5-7b), no ZAI or Anthropic eval.
 
 ## crash recovery
 
@@ -193,7 +194,7 @@ llm-skills.cli/
     c0_config/
         pipeline_stage.py       stage metadata (id, name, pipeline_dir, commands, dependencies)
         pipeline_profile.py     experiment profile dataclass + minimal overrides
-        stage_registry.py       registry of all 10 stages with range parser
+        stage_registry.py       registry of all 11 stages with range parser
     c1_tools/
         profile_loader.py       YAML load/save for profiles
         stage_runner.py         subprocess execution of individual stages

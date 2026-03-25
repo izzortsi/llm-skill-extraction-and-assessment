@@ -159,6 +159,15 @@ def build_stage_args(
             args += ["--judge-provider", profile.judge_provider, "--judge-model", profile.judge_model]
         return args
 
+    if stage_id == "9":
+        stage8_dir = run_dir / "stage8-skillmix-evaluation"
+        stage9_dir = run_dir / "stage9-skillmix-visualization"
+        return [
+            "--results-dir", str(stage8_dir),
+            "--output-dir", str(stage9_dir),
+            "--dpi", "200",
+        ]
+
     raise ValueError(f"Unknown stage_id: {stage_id}")
 
 
@@ -188,18 +197,6 @@ def build_stage8_report_args(
     return [
         "--results-dir", str(stage8_dir),
         "--output", str(stage8_dir / "report.txt"),
-    ]
-
-
-def build_stage8_visualize_args(
-    run_dir: Path,
-) -> List[str]:
-    """Build args for stage 8's third command (visualize)."""
-    stage8_dir = run_dir / "stage8-skillmix-evaluation"
-    return [
-        "--results-dir", str(stage8_dir),
-        "--output-dir", str(stage8_dir / "charts"),
-        "--dpi", "200",
     ]
 
 

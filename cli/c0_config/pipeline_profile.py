@@ -54,9 +54,9 @@ class PipelineProfile:
 MINIMAL_OVERRIDES = {
     "max_chunks": 1,
     "tasks_per_chunk": 1,
-    "max_skills": 3,
+    "max_skills": 2,
     "modes": ["singlecall"],
-    "eval_models": ["qwen2.5-3b"],
+    "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
     "zai_model": "",
     "anthropic_eval_model": "",
 }

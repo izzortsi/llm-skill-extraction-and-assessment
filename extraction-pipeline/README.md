@@ -49,7 +49,9 @@ pipeline-runs/default/
     stage6-visualization/
         {singlecall,stepwise,guided}/, cross-mode/
     stage8-skillmix-evaluation/
-        episodes.json, summary.json, report.txt, charts/
+        episodes.json, summary.json, report.txt
+    stage9-skillmix-visualization/
+        baseline_vs_skill.png, delta_by_model.png, skill_heatmap.png, win_loss.png
     traceability-report.txt
     csv/
         skills.csv, skill_instances.csv

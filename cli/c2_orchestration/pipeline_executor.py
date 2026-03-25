@@ -19,7 +19,6 @@ from c2_orchestration.stage_output_wirer import (
     build_stage_args,
     build_stage7_csv_args,
     build_stage8_report_args,
-    build_stage8_visualize_args,
     register_stage_outputs,
 )
 
@@ -249,6 +248,12 @@ def _stage_output_exists(stage, run_dir: Path, profile: PipelineProfile) -> bool
             if not cross_dir.exists():
                 return False
             png_files = list(cross_dir.glob("*.png"))
+            return len(png_files) > 0
+        if stage.stage_id == "9":
+            viz_dir = run_dir / stage.output_dir
+            if not viz_dir.exists():
+                return False
+            png_files = list(viz_dir.glob("*.png"))
             return len(png_files) > 0
         return False
 
@@ -499,7 +504,7 @@ def _execute_stage7(stage, profile, run_dir, repo_root, pipeline_dir,
 
 def _execute_stage8(stage, profile, run_dir, repo_root, pipeline_dir,
                     logs_dir, stage_outputs, verbose, print_fn):
-    """Execute stage 8 (SkillMix evaluation + report + visualization)."""
+    """Execute stage 8 (SkillMix evaluation + report)."""
     results = []
 
     # command 1: run-skillmix
@@ -532,19 +537,5 @@ def _execute_stage8(stage, profile, run_dir, repo_root, pipeline_dir,
     report_result.stage_id = "8"
     results.append(report_result)
 
-    # command 3: visualize (charts)
-    viz_args = build_stage8_visualize_args(run_dir)
-    viz_log_path = logs_dir / "stage8-visualize.log"
-    viz_result = run_stage_command(
-        pipeline_dir=pipeline_dir,
-        command="visualize",
-        args=viz_args,
-        log_path=viz_log_path,
-        verbose=verbose,
-    )
-    viz_result.stage_id = "8"
-    results.append(viz_result)
-
-    total_time = result.duration_seconds + report_result.duration_seconds + viz_result.duration_seconds
-    ui_stage_complete("8", total_time)
+    ui_stage_complete("8", result.duration_seconds + report_result.duration_seconds)
     return results
