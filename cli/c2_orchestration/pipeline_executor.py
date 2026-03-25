@@ -95,6 +95,7 @@ def execute_pipeline(
     stage_range: str,
     repo_root: Path,
     clean: bool = False,
+    clean_stages: bool = False,
     verbose: bool = True,
     print_fn=None,
 ) -> List[StageResult]:
@@ -104,7 +105,8 @@ def execute_pipeline(
         profile: experiment configuration
         stage_range: stage range string ("all", "1-4", "5-7", etc.)
         repo_root: absolute path to kcg-ml-llm repository root
-        clean: if True, wipe the run directory before starting
+        clean: if True, wipe the entire run directory before starting
+        clean_stages: if True, wipe only the output of requested stages
         verbose: stream subprocess output to console
         print_fn: callable for status messages (default: print)
 
@@ -130,6 +132,22 @@ def execute_pipeline(
 
     # parse stage range
     stage_ids = parse_stage_range(stage_range)
+
+    # clean-stages mode: wipe only the requested stages' output
+    if clean_stages and not clean:
+        for sid in stage_ids:
+            stage = get_stage(sid)
+            if stage.output_dir:
+                stage_dir = run_dir / stage.output_dir
+                if stage_dir.exists():
+                    ui_info(f"CLEAN-STAGE: removing {stage_dir}")
+                    shutil.rmtree(stage_dir)
+            # also remove specific output files for stages with output_dir=""
+            for output_file in stage.output_files:
+                fpath = run_dir / output_file if not stage.output_dir else run_dir / stage.output_dir / output_file
+                if fpath.exists():
+                    ui_info(f"CLEAN-STAGE: removing {fpath}")
+                    fpath.unlink()
 
     # accumulate outputs from completed stages
     stage_outputs: Dict[str, Dict[str, str]] = {}
