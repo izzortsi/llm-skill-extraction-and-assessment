@@ -84,11 +84,16 @@ def build_stage_args(
         ]
 
     if stage_id == "4":
-        return [
+        args = [
             "--skills", stage_outputs.get("3", {}).get("skills", str(stage3_dir / "skills.json")),
             "--output", str(stage4_dir / "verified_skills.json"),
+            "--revise",
+            "--provider", profile.extraction_provider,
+            "--model", profile.extraction_model,
+            "--standards-dir", str(repo_root / "b0.standards"),
             "-v",
         ]
+        return args
 
     if stage_id == "4b":
         stage4b_dir = run_dir / "stage4b-skill-composition"
