@@ -87,7 +87,7 @@ STAGES = [
         pipeline_dir="llm-skills.task-skill-extraction-pipeline",
         commands=["traceability-report", "export-csv"],
         output_dir="",  # outputs to run_dir root and run_dir/csv
-        output_files=["traceability-report.txt"],
+        output_files=["traceability-report.txt", "csv/skills.csv"],
         depends_on=["1a", "1b", "4"],
     ),
 ]
@@ -104,6 +104,26 @@ def get_stage(stage_id: str) -> PipelineStage:
         valid_ids = ", ".join(ALL_STAGE_IDS)
         raise KeyError(f"Unknown stage_id '{stage_id}'. Valid IDs: {valid_ids}")
     return STAGE_MAP[stage_id]
+
+
+def _resolve_stage_index(stage_str: str, range_str: str, find_first: bool) -> int:
+    """Resolve a stage string to an index in ALL_STAGE_IDS.
+
+    Supports both exact IDs ("1a", "4") and numeric prefixes ("1" -> "1a"/"1b").
+    When find_first=True, returns the first matching index (for range start).
+    When find_first=False, returns the last matching index (for range end).
+    """
+    if stage_str in ALL_STAGE_IDS:
+        return ALL_STAGE_IDS.index(stage_str)
+
+    # numeric prefix: "1" matches "1a" and "1b"
+    if stage_str.isdigit():
+        matches = [i for i, sid in enumerate(ALL_STAGE_IDS) if sid.startswith(stage_str)]
+        if matches:
+            return matches[0] if find_first else matches[-1]
+
+    label = "start" if find_first else "end"
+    raise ValueError(f"Unknown {label} stage '{stage_str}' in range '{range_str}'")
 
 
 def parse_stage_range(range_str: str) -> list:
@@ -143,14 +163,8 @@ def parse_stage_range(range_str: str) -> list:
         start_str = parts[0].strip()
         end_str = parts[1].strip()
 
-        try:
-            start_idx = ALL_STAGE_IDS.index(start_str)
-        except ValueError:
-            raise ValueError(f"Unknown start stage '{start_str}' in range '{range_str}'")
-        try:
-            end_idx = ALL_STAGE_IDS.index(end_str)
-        except ValueError:
-            raise ValueError(f"Unknown end stage '{end_str}' in range '{range_str}'")
+        start_idx = _resolve_stage_index(start_str, range_str, find_first=True)
+        end_idx = _resolve_stage_index(end_str, range_str, find_first=False)
 
         if start_idx > end_idx:
             raise ValueError(f"Start stage '{start_str}' comes after end stage '{end_str}'")

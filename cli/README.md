@@ -1,8 +1,8 @@
 # llm-skills.cli
 
-unified CLI for the llm-skills pipeline suite. orchestrates all 7 pipeline stages
-across 4 separate pipeline projects via subprocess isolation, with Rich-powered
-terminal UI, YAML experiment profiles, and crash recovery.
+unified CLI for the llm-skills pipeline suite. orchestrates all 8 pipeline stages
+(1a, 1b, 2-7) across 4 separate pipeline projects via subprocess isolation, with
+Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 
 ## quickstart
 

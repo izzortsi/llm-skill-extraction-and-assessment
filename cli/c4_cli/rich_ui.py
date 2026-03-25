@@ -17,6 +17,7 @@ Components:
 
 from __future__ import annotations
 
+import re
 import sys
 from typing import List
 
@@ -40,11 +41,18 @@ if HAS_RICH:
     console = Console()
 else:
     class _PlainConsole:
+        # known Rich style tags to strip; keeps non-style brackets like [skip], [done]
+        _RICH_TAGS = re.compile(
+            r"\[/?"
+            r"(?:bold|italic|underline|strike|dim|reverse|blink|"
+            r"red|green|blue|yellow|magenta|cyan|white|black|"
+            r"bold red|bold cyan|bold green)"
+            r"\]"
+        )
+
         def print(self, *args, **kwargs):
             text = " ".join(str(a) for a in args)
-            # strip Rich markup for plain output
-            import re
-            text = re.sub(r"\[/?[a-zA-Z0-9_ #]+\]", "", text)
+            text = self._RICH_TAGS.sub("", text)
             print(text)
     console = _PlainConsole()
 

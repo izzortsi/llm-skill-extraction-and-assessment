@@ -78,7 +78,7 @@ def build_stage_args(
             "--traces", stage_outputs.get("2", {}).get("traces", str(stage2_dir / "traces.jsonl")),
             "--output", str(stage3_dir / "skills.json"),
             "--max-skills", str(profile.max_skills),
-            "--provider", "anthropic",
+            "--provider", profile.extraction_provider,
             "--model", profile.extraction_model,
             "-v",
         ]
@@ -93,7 +93,7 @@ def build_stage_args(
     if stage_id == "5":
         config_path = repo_root / profile.config_file
         if config_path.exists():
-            return [
+            args = [
                 "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
                 "--skills", stage_outputs.get("4", {}).get("skills", str(stage4_dir / "verified_skills.json")),
                 "--config", str(config_path),
@@ -101,16 +101,15 @@ def build_stage_args(
                 "--output", str(stage5_dir / mode / "results-all.json"),
                 "-v",
             ]
+            # pass --models to restrict evaluation to profile's eval_models subset
+            if profile.eval_models:
+                args += ["--models", ",".join(profile.eval_models)]
+            return args
         else:
-            # legacy fallback: caller must invoke once per model
-            return [
-                "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
-                "--skills", stage_outputs.get("4", {}).get("skills", str(stage4_dir / "verified_skills.json")),
-                "--mode", mode,
-                "--judge-provider", profile.judge_provider,
-                "--judge-model", profile.judge_model,
-                "-v",
-            ]
+            raise ValueError(
+                f"Stage 5 config file not found at '{config_path}'. "
+                "Ensure profile.config_file points to a valid models.yaml."
+            )
 
     if stage_id == "6":
         return [

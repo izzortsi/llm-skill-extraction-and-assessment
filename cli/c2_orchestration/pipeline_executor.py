@@ -216,12 +216,19 @@ def execute_pipeline(
 def _stage_output_exists(stage, run_dir: Path, profile: PipelineProfile) -> bool:
     """Check if a stage's output already exists on disk."""
     if not stage.output_files:
-        # stages with dynamic output (5, 6) -- check first mode dir
+        # stages with dynamic output -- check all expected per-mode outputs
         if stage.stage_id == "5":
-            first_mode = profile.modes[0] if profile.modes else "singlecall"
-            return (run_dir / stage.output_dir / first_mode / "results-all.json").exists()
+            modes = profile.modes if profile.modes else ["singlecall"]
+            for mode in modes:
+                if not (run_dir / stage.output_dir / mode / "results-all.json").exists():
+                    return False
+            return True
         if stage.stage_id == "6":
-            return (run_dir / stage.output_dir / "cross-mode").exists()
+            cross_dir = run_dir / stage.output_dir / "cross-mode"
+            if not cross_dir.exists():
+                return False
+            png_files = list(cross_dir.glob("*.png"))
+            return len(png_files) > 0
         return False
 
     for output_file in stage.output_files:
@@ -310,13 +317,17 @@ def _execute_stage6(stage, profile, run_dir, repo_root, pipeline_dir,
             "--dpi", "200",
         ]
         log_path = logs_dir / f"stage6-{mode}.log"
-        run_stage_command(
+        mode_result = run_stage_command(
             pipeline_dir=pipeline_dir,
             command="heatmaps",
             args=args,
             log_path=log_path,
             verbose=verbose,
         )
+        if mode_result.exit_code != 0:
+            ui_stage_fail("6", mode_result.exit_code, mode_result.log_path)
+            mode_result.stage_id = "6"
+            return mode_result
 
     # cross-mode charts
     cross_dir = stage6_dir / "cross-mode"
@@ -333,6 +344,11 @@ def _execute_stage6(stage, profile, run_dir, repo_root, pipeline_dir,
         verbose=verbose,
     )
     result.stage_id = "6"
+
+    if result.exit_code != 0:
+        ui_stage_fail("6", result.exit_code, result.log_path)
+        return result
+
     ui_stage_complete("6", result.duration_seconds)
     return result
 
