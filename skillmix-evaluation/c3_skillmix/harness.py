@@ -65,7 +65,9 @@ def run_skillmix_episode(
         system_prompt = base_prompt
         condition = "baseline"
 
-    user_prompt = f"Passage: {task['passage']}\n\nChallenge: {task['challenge']}"
+    passage = task.get("passage", task.get("input", ""))
+    challenge = task.get("challenge", task.get("question", ""))
+    user_prompt = f"Passage: {passage}\n\nChallenge: {challenge}"
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -97,8 +99,8 @@ def run_skillmix_episode(
     if judge and response_text:
         judge_result = judge.evaluate(
             response=response_text,
-            passage=task.get("passage", ""),
-            challenge=task.get("challenge", ""),
+            passage=passage,
+            challenge=challenge,
             acceptance_criteria=task.get("acceptance_criteria", {}),
         )
 
