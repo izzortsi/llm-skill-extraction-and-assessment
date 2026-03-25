@@ -1,5 +1,6 @@
 profile_name: default
 run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/default-profile
+lmproxy_base_url: "http://localhost:8080/v1"
 
 # source data (stage 1a)
 dataset: wikimedia/wikipedia
