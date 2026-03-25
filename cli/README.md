@@ -95,6 +95,19 @@ python3 -m c4_cli.main config create --interactive   # create via prompts (disco
 python3 -m c4_cli.main config delete my-experiment   # delete a profile
 ```
 
+after creating a profile, run the pipeline with it:
+
+```bash
+# run all stages with a named profile
+python3 -m c4_cli.main run --profile my-experiment --stages all --clean
+
+# run extraction stages only
+python3 -m c4_cli.main run --profile my-experiment --stages extraction
+
+# run with minimal overrides (reduces chunks, skills, models)
+python3 -m c4_cli.main run --profile my-experiment --stages all --minimal --clean
+```
+
 ### status
 
 show which stages have completed output in the run directory.
