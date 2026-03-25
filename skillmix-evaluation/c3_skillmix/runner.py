@@ -26,7 +26,7 @@ from c3_skillmix.harness import run_skillmix_episode, SkillMixEpisode
 
 
 def _lmproxy_base_url() -> str:
-    return os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080")
+    return os.environ.get("LMPROXY_BASE_URL", "http://localhost:8080/v1")
 
 
 def _ensure_lmproxy_session(worker_id: str = "skillmix-pipeline") -> str:
