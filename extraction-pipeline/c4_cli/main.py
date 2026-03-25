@@ -64,6 +64,9 @@ Commands:
   Reporting:
     traceability-report  Generate traceability report (source doc -> skill)
     export-csv      Generate CSV artifacts
+
+  Format Conversion:
+    format          Convert between JSON and markdown (skills-to-md, tasks-to-md, etc.)
 """,
     )
     parser.add_argument("command", help="Command to run")
@@ -119,6 +122,11 @@ Commands:
     elif args.command == "export-csv":
         sys.argv = ["export-csv"] + args.args
         from c2_extraction.csv_export import main as cmd_main
+        cmd_main()
+
+    elif args.command == "format":
+        sys.argv = ["format"] + args.args
+        from c1_tools.skill_formatter import main as cmd_main
         cmd_main()
 
     else:
