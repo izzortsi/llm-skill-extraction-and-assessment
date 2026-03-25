@@ -7,7 +7,7 @@ environment variable consumed by one or more pipeline stages.
 """
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import Dict, List
 
 
 @dataclass
@@ -35,7 +35,8 @@ class PipelineProfile:
     # evaluation (stage 5)
     config_file: str = "llm-skills.llm-providers/configs/models.yaml"
     ollama_url: str = "http://localhost:11434/v1"
-    eval_models: List[str] = field(default_factory=lambda: ["qwen2.5-3b", "qwen2.5-7b"])
+    lmproxy_base_url: str = "http://localhost:8080/v1"
+    eval_models: List[Dict[str, str]] = field(default_factory=lambda: [{"provider": "lmproxy", "model": "qwen2.5-3b"}, {"provider": "lmproxy", "model": "qwen2.5-7b"}])
     modes: List[str] = field(default_factory=lambda: ["singlecall", "stepwise", "guided"])
 
     # optional API models (stage 5 legacy path)
@@ -60,7 +61,7 @@ MINIMAL_OVERRIDES = {
     "tasks_per_chunk": 2,
     "max_skills": 2,
     "modes": ["singlecall"],
-    "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
+    "eval_models": [{"provider": "lmproxy", "model": "qwen2.5-3b"}, {"provider": "lmproxy", "model": "qwen2.5-7b"}],
     "compose_k_values": [2],
     "compose_operators": ["seq"],
     "zai_model": "",
