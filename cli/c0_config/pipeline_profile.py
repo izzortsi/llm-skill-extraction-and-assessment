@@ -50,6 +50,9 @@ class PipelineProfile:
     # skill extraction (stage 3)
     max_skills: int = 8
 
+    # skill composition (stage 4b)
+    compose_k_values: List[int] = field(default_factory=lambda: [2, 3, 4, 5])
+
 
 MINIMAL_OVERRIDES = {
     "max_chunks": 1,
@@ -57,6 +60,7 @@ MINIMAL_OVERRIDES = {
     "max_skills": 2,
     "modes": ["singlecall"],
     "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
+    "compose_k_values": [2],
     "zai_model": "",
     "anthropic_eval_model": "",
 }

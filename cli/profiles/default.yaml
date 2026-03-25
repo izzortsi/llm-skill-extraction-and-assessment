@@ -39,3 +39,10 @@ judge_model: claude-opus-4-6
 
 # skill extraction (stage 3)
 max_skills: 8
+
+# skill composition (stage 4b)
+compose_k_values:
+  - 2
+  - 3
+  - 4
+  - 5
