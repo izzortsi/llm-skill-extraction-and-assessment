@@ -36,6 +36,59 @@ except ImportError:
     _HAS_UI = False
 
 
+def _plain_print(msg):
+    print(msg)
+
+
+def ui_stage_start(sid, desc):
+    if _HAS_UI:
+        print_stage_start(sid, desc)
+    else:
+        _plain_print(f"\n=== Stage {sid}: {desc} ===")
+
+
+def ui_stage_skip(sid):
+    if _HAS_UI:
+        print_stage_skip(sid)
+    else:
+        _plain_print(f"  [skip] output already exists")
+
+
+def ui_stage_complete(sid, duration):
+    if _HAS_UI:
+        print_stage_complete(sid, duration)
+    else:
+        _plain_print(f"  completed in {duration:.1f}s")
+
+
+def ui_stage_fail(sid, code, log):
+    if _HAS_UI:
+        print_stage_fail(sid, code, log)
+    else:
+        _plain_print(f"  FAILED (exit code {code}). See {log}")
+
+
+def ui_dep_error(sid, missing):
+    if _HAS_UI:
+        print_dependency_error(sid, missing)
+    else:
+        _plain_print(f"  ERROR: missing dependencies: stages {', '.join(missing)}")
+
+
+def ui_mode(mode):
+    if _HAS_UI:
+        print_stage_mode(mode)
+    else:
+        _plain_print(f"  --- mode: {mode} ---")
+
+
+def ui_info(msg):
+    if _HAS_UI:
+        print_stage_info(msg)
+    else:
+        _plain_print(f"  {msg}")
+
+
 def execute_pipeline(
     profile: PipelineProfile,
     stage_range: str,
@@ -59,48 +112,6 @@ def execute_pipeline(
     """
     if print_fn is None:
         print_fn = print
-
-    def ui_stage_start(sid, desc):
-        if _HAS_UI:
-            print_stage_start(sid, desc)
-        else:
-            print_fn(f"\n=== Stage {sid}: {desc} ===")
-
-    def ui_stage_skip(sid):
-        if _HAS_UI:
-            print_stage_skip(sid)
-        else:
-            print_fn(f"  [skip] output already exists")
-
-    def ui_stage_complete(sid, duration):
-        if _HAS_UI:
-            print_stage_complete(sid, duration)
-        else:
-            print_fn(f"  completed in {duration:.1f}s")
-
-    def ui_stage_fail(sid, code, log):
-        if _HAS_UI:
-            print_stage_fail(sid, code, log)
-        else:
-            print_fn(f"  FAILED (exit code {code}). See {log}")
-
-    def ui_dep_error(sid, missing):
-        if _HAS_UI:
-            print_dependency_error(sid, missing)
-        else:
-            print_fn(f"  ERROR: missing dependencies: stages {', '.join(missing)}")
-
-    def ui_mode(mode):
-        if _HAS_UI:
-            print_stage_mode(mode)
-        else:
-            print_fn(f"  --- mode: {mode} ---")
-
-    def ui_info(msg):
-        if _HAS_UI:
-            print_stage_info(msg)
-        else:
-            print_fn(f"  {msg}")
 
     run_dir = Path(profile.run_dir)
     if not run_dir.is_absolute():
