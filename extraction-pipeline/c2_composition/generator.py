@@ -26,6 +26,7 @@ def generate_and_save(
     atomic_dir: Path,
     output_dir: Path,
     k_values: List[int] = None,
+    operators: List[str] = None,
     use_semantic: bool = False,
     semantic_config: Optional[SemanticCompositionConfig] = None,
     verbose: bool = False,
@@ -33,6 +34,8 @@ def generate_and_save(
     """Generate all compositions and save to disk."""
     if k_values is None:
         k_values = [2, 3, 4, 5]
+    if operators is None:
+        operators = ["seq", "par", "cond"]
 
     registry = SkillRegistry.from_directory(atomic_dir)
     if verbose:
@@ -46,6 +49,8 @@ def generate_and_save(
 
     counts = {}
     for comp_type, skills_list in all_comps.items():
+        if comp_type not in operators:
+            continue
         for composed in skills_list:
             if composed.k_value not in k_values:
                 continue
@@ -76,7 +81,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate skill compositions")
     parser.add_argument("--atomic-dir", type=Path, required=True, help="Directory with atomic skill .md files")
     parser.add_argument("--output-dir", "-o", type=Path, default=Path("composed-skills"), help="Output directory")
-    parser.add_argument("--k", type=int, nargs="+", default=[2, 3, 4, 5], help="K values to generate")
+    parser.add_argument("--k", type=int, nargs="+", default=[2, 3], help="K values to generate")
+    parser.add_argument("--operators", type=str, nargs="+", default=["seq"], help="Operator types to generate (seq, par, cond)")
     parser.add_argument("--semantic", action="store_true", help="Include semantic compositions")
     parser.add_argument("--provider", type=str, default="anthropic", help="Provider for semantic composition")
     parser.add_argument("--model", type=str, default="claude-opus-4-6", help="Model for semantic composition")
@@ -89,6 +95,7 @@ def main() -> None:
 
     counts = generate_and_save(
         args.atomic_dir, args.output_dir, k_values=args.k,
+        operators=args.operators,
         use_semantic=args.semantic, semantic_config=semantic_config,
         verbose=args.verbose,
     )

@@ -39,6 +39,8 @@ def main() -> None:
                         help="Stage range: all, 1-4, 5-7, extraction, evaluation, 1a,3,5")
     parser.add_argument("--clean", action="store_true",
                         help="Wipe previous output and re-run all stages")
+    parser.add_argument("--clean-stages", action="store_true",
+                        help="Wipe output of only the requested stages before running")
     parser.add_argument("--minimal", action="store_true",
                         help="Override with minimal settings (fewest API calls)")
     parser.add_argument("--run-dir", type=str, default="",
@@ -91,6 +93,7 @@ def main() -> None:
         stage_range=args.stages,
         repo_root=repo_root,
         clean=args.clean,
+        clean_stages=args.clean_stages,
         verbose=verbose,
     )
 

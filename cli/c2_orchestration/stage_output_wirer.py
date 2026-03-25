@@ -84,20 +84,30 @@ def build_stage_args(
         ]
 
     if stage_id == "4":
-        return [
+        args = [
             "--skills", stage_outputs.get("3", {}).get("skills", str(stage3_dir / "skills.json")),
             "--output", str(stage4_dir / "verified_skills.json"),
+            "--revise",
+            "--provider", profile.extraction_provider,
+            "--model", profile.extraction_model,
+            "--standards-dir", str(repo_root / "b0.standards"),
             "-v",
         ]
+        return args
 
     if stage_id == "4b":
         stage4b_dir = run_dir / "stage4b-skill-composition"
         atomic_md_dir = stage4b_dir / "atomic-skills-md"
-        return [
+        args = [
             "--atomic-dir", str(atomic_md_dir),
             "--output-dir", str(stage4b_dir),
-            "-v",
+            "--k",
         ]
+        args += [str(k) for k in profile.compose_k_values]
+        args += ["--operators"]
+        args += profile.compose_operators
+        args.append("-v")
+        return args
 
     if stage_id == "5":
         config_path = repo_root / profile.config_file
@@ -139,6 +149,35 @@ def build_stage_args(
             "-v",
         ]
 
+    if stage_id == "8":
+        # stage 8 has three commands; return args for the first (run-skillmix)
+        # report and visualize args are built separately
+        stage4b_dir = run_dir / "stage4b-skill-composition"
+        stage8_dir = run_dir / "stage8-skillmix-evaluation"
+        config_path = repo_root / profile.config_file
+        args = [
+            "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
+            "--skills-dir", str(stage4b_dir),
+            "--models", ",".join(profile.eval_models),
+            "--output-dir", str(stage8_dir),
+            "-v",
+        ]
+        if config_path.exists():
+            args += ["--config", str(config_path)]
+        else:
+            args += ["--base-url", profile.ollama_url, "--provider", "openai"]
+            args += ["--judge-provider", profile.judge_provider, "--judge-model", profile.judge_model]
+        return args
+
+    if stage_id == "9":
+        stage8_dir = run_dir / "stage8-skillmix-evaluation"
+        stage9_dir = run_dir / "stage9-skillmix-visualization"
+        return [
+            "--results-dir", str(stage8_dir),
+            "--output-dir", str(stage9_dir),
+            "--dpi", "200",
+        ]
+
     raise ValueError(f"Unknown stage_id: {stage_id}")
 
 
@@ -157,6 +196,17 @@ def build_stage7_csv_args(
         "--passages", stage_outputs.get("1a", {}).get("passages", str(stage1_dir / "passages.json")),
         "--output-dir", str(run_dir / "csv"),
         "-v",
+    ]
+
+
+def build_stage8_report_args(
+    run_dir: Path,
+) -> List[str]:
+    """Build args for stage 8's second command (report)."""
+    stage8_dir = run_dir / "stage8-skillmix-evaluation"
+    return [
+        "--results-dir", str(stage8_dir),
+        "--output", str(stage8_dir / "report.txt"),
     ]
 
 

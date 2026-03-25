@@ -1,7 +1,7 @@
 # llm-skills.cli
 
-unified CLI for the llm-skills pipeline suite. orchestrates all 8 pipeline stages
-(1a, 1b, 2-7) across 4 separate pipeline projects via subprocess isolation, with
+unified CLI for the llm-skills pipeline suite. orchestrates all 11 pipeline stages
+(1a, 1b, 2-8) across 5 separate pipeline projects via subprocess isolation, with
 Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 
 ## quickstart
@@ -29,9 +29,10 @@ execute pipeline stages with profile-based configuration.
 python3 -m c4_cli.main run [options]
 
 options:
-  --stages RANGE       all, 1-4, 5-7, extraction, evaluation, 1a,3,5
+  --stages RANGE       all, 1-4, 5-9, extraction, evaluation, skillsbench, skillmix, 1a,3,5
+  --clean-stages       wipe only the requested stages' output (not the whole run dir)
   --profile NAME       named profile from profiles/ directory
-  --minimal            1 chunk, 1 task/chunk, 3 skills, singlecall, 1 model
+  --minimal            1 chunk, 2 tasks/chunk, 2 skills, k=2, singlecall, 2 models
   --clean              wipe previous output and re-run from scratch
   --interactive        build profile via guided prompts before running
   --run-dir PATH       override output directory
@@ -47,8 +48,14 @@ python3 -m c4_cli.main run --stages all
 # extraction only (stages 1a through 4)
 python3 -m c4_cli.main run --stages extraction
 
-# evaluation only (stages 5-7, requires prior extraction output)
+# evaluation only (stages 5-9, requires prior extraction output)
 python3 -m c4_cli.main run --stages evaluation
+
+# skillsbench only (stages 5-6)
+python3 -m c4_cli.main run --stages skillsbench
+
+# skillmix only (stages 8-9, requires stages 1b + 4b output)
+python3 -m c4_cli.main run --stages skillmix
 
 # single stage
 python3 -m c4_cli.main run --stages 3
@@ -96,11 +103,13 @@ python3 -m c4_cli.main setup --profile my-experiment
 the `--stages` flag accepts these formats:
 
 ```
-all           all 8 stages (1a, 1b, 2, 3, 4, 5, 6, 7)
-extraction    stages 1a through 4 (text + skill extraction)
-evaluation    stages 5 through 7 (eval + visualization + traceability)
+all           all 11 stages (1a, 1b, 2, 3, 4, 4b, 5, 6, 7, 8, 9)
+extraction    stages 1a through 4b (text + skill extraction + composition)
+evaluation    stages 5 through 9 (eval + viz + traceability + skillmix)
+skillsbench   stages 5-6 (skillsbench eval + visualization)
+skillmix      stages 8-9 (skillmix eval + report + visualization)
 1-4           range from stage 1a to stage 4
-5-7           range from stage 5 to stage 7
+5-9           range from stage 5 to stage 9
 1a,1b,5       comma-separated specific stages
 3             single stage
 ```
@@ -108,18 +117,29 @@ evaluation    stages 5 through 7 (eval + visualization + traceability)
 ## pipeline stages
 
 ```
-stage  name               pipeline project                          commands
------  -----------------  ----------------------------------------  -------------------
-1a     extract-passages   llm-skills.text-extraction-pipeline       extract-passages
-1b     extract-tasks      llm-skills.text-extraction-pipeline       extract-tasks
-2      capture-traces     llm-skills.task-skill-extraction-pipeline  capture-traces
-3      extract-skills     llm-skills.task-skill-extraction-pipeline  extract-skills
-4      verify-skills      llm-skills.task-skill-extraction-pipeline  verify-skills
-5      corpus-evaluation  llm-skills.skillsbench-evaluation          run-skillsbench
-6      visualization      llm-skills.skillsbench-evaluation          heatmaps
-7      traceability       llm-skills.task-skill-extraction-pipeline  traceability-report
-                                                                     export-csv
+stage  name                pipeline project                      commands
+-----  ------------------  ------------------------------------  ----------------------------
+1a     extract-passages    llm-skills.extraction-pipeline        extract-passages
+1b     extract-tasks       llm-skills.extraction-pipeline        extract-tasks
+2      capture-traces      llm-skills.extraction-pipeline        capture-traces
+3      extract-skills      llm-skills.extraction-pipeline        extract-skills
+4      verify-skills       llm-skills.extraction-pipeline        verify-skills --revise
+4b     compose-skills      llm-skills.extraction-pipeline        compose-skills
+5      corpus-evaluation   llm-skills.skillsbench-evaluation     run-skillsbench
+6      visualization       llm-skills.skillsbench-evaluation     heatmaps
+7      traceability        llm-skills.extraction-pipeline        traceability-report, export-csv
+8      skillmix-evaluation  llm-skills.skillmix-evaluation        run-skillmix, report
+9      skillmix-viz         llm-skills.skillmix-evaluation        visualize
 ```
+
+### LLM usage by stage
+
+- **stage 1b** (extract-tasks): extraction LLM generates tasks from passages
+- **stage 2** (capture-traces): trace LLM runs tasks to capture reasoning traces
+- **stage 3** (extract-skills): extraction LLM extracts skills from traces
+- **stage 4** (verify-skills): rule-based checks first, then extraction LLM revises defective skills using b0.standards/ language rules (up to 2 revision attempts per skill)
+- **stage 5** (corpus-evaluation): LLM judge scores model responses against acceptance criteria
+- **stage 8** (skillmix-evaluation): LLM judge scores composed-skill responses against acceptance criteria
 
 each stage runs as a subprocess inside its pipeline directory:
 
@@ -135,7 +155,7 @@ configuration needed for a pipeline run:
 
 ```yaml
 profile_name: my-experiment
-run_dir: llm-skills.shared-data/my-experiment-run
+run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/my-experiment-profile
 
 # source data (stage 1a)
 dataset: wikimedia/wikipedia
@@ -153,23 +173,31 @@ extraction_model: claude-opus-4-6
 trace_provider: anthropic
 trace_model: claude-opus-4-6
 
-# evaluation (stage 5)
+# evaluation (stages 5, 8)
 config_file: llm-skills.llm-providers/configs/models.yaml
 modes:
   - singlecall
   - stepwise
   - guided
 
-# judge (stage 5)
+# judge (stages 5, 8)
 judge_provider: anthropic
 judge_model: claude-opus-4-6
 
 # skill extraction (stage 3)
 max_skills: 8
+
+# skill composition (stage 4b)
+compose_k_values:
+  - 2
+  - 3
+  - 4
+  - 5
 ```
 
-the `--minimal` flag overrides any profile with: 1 chunk, 1 task/chunk, 3 skills,
-singlecall mode only, 1 Ollama model (qwen2.5:3b), no ZAI or Anthropic eval.
+the `--minimal` flag overrides any profile with: 1 chunk, 2 tasks/chunk, 2 skills,
+k=2 compositions only, singlecall mode, 2 Ollama models (qwen2.5-3b, qwen2.5-7b),
+no ZAI or Anthropic eval.
 
 ## crash recovery
 
@@ -184,7 +212,7 @@ llm-skills.cli/
     c0_config/
         pipeline_stage.py       stage metadata (id, name, pipeline_dir, commands, dependencies)
         pipeline_profile.py     experiment profile dataclass + minimal overrides
-        stage_registry.py       registry of all 8 stages with range parser
+        stage_registry.py       registry of all 11 stages with range parser
     c1_tools/
         profile_loader.py       YAML load/save for profiles
         stage_runner.py         subprocess execution of individual stages
@@ -212,5 +240,6 @@ llm-skills.cli/
 - rich (optional, for colored terminal output; degrades to plain text if absent)
 - pyyaml (for profile loading)
 
-the pipeline projects (llm-skills.text-extraction-pipeline, etc.) have their own
-dependencies (anthropic, openai, datasets, matplotlib). run `setup` to check.
+the pipeline projects (llm-skills.extraction-pipeline, llm-skills.skillsbench-evaluation,
+llm-skills.skillmix-evaluation) have their own dependencies (anthropic, openai, datasets,
+matplotlib). run `setup` to check.

@@ -127,16 +127,26 @@ def run_skillmix_experiment(
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Register with lmproxy and start session
+    # Register with lmproxy (used as fallback when model config has no base_url)
     worker_id = _ensure_lmproxy_session()
-    client = _create_lmproxy_client(worker_id)
+    lmproxy_client = _create_lmproxy_client(worker_id)
 
     total_episodes = len(model_configs) * len(tasks) * (1 + len(skills))
     episode_count = 0
 
     for model_cfg in model_configs:
+        model_base_url = model_cfg.get("base_url", "")
+        if model_base_url:
+            # config-driven: create client pointing at the model's own endpoint
+            client = openai.OpenAI(
+                base_url=model_base_url,
+                api_key=model_cfg.get("api_key", "na"),
+            )
+        else:
+            # fallback: use lmproxy
+            client = lmproxy_client
         provider = _OpenAIProvider(client, model_cfg.get("model", ""))
-        model_name = model_cfg.get("model", "unknown")
+        model_name = model_cfg.get("alias", model_cfg.get("model", "unknown"))
 
         if verbose:
             print(f"\nModel: {model_name}")

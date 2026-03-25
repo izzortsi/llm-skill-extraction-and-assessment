@@ -25,11 +25,12 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         help="Run SkillMix benchmark (multi-model, LLM-as-judge)",
     )
     parser.add_argument("--tasks", type=Path, required=True, help="Path to tasks JSON")
-    parser.add_argument("--skills-dir", type=Path, help="Directory with composed skill .md files")
+    parser.add_argument("--skills-dir", type=Path, help="Directory with skill .md files (recursive)")
     parser.add_argument("--atomic-dir", type=Path, help="Directory with atomic skill .md files")
-    parser.add_argument("--models", type=str, required=True, help="Comma-separated model names (for Ollama)")
-    parser.add_argument("--base-url", type=str, default="http://localhost:11434/v1", help="Ollama base URL")
-    parser.add_argument("--provider", type=str, default="openai", help="Model provider")
+    parser.add_argument("--models", type=str, required=True, help="Comma-separated model aliases")
+    parser.add_argument("--config", type=Path, help="Path to models.yaml config (resolves aliases to providers)")
+    parser.add_argument("--base-url", type=str, default="http://localhost:11434/v1", help="Ollama base URL (legacy, ignored when --config is set)")
+    parser.add_argument("--provider", type=str, default="openai", help="Model provider (legacy, ignored when --config is set)")
     parser.add_argument("--judge-provider", type=str, default="anthropic")
     parser.add_argument("--judge-model", type=str, default="claude-opus-4-6")
     parser.add_argument("--output-dir", "-o", type=Path, default=Path("stage5-corpus-evaluation/skillmix-results"))
@@ -54,17 +55,51 @@ def run(args: argparse.Namespace) -> None:
                 skills[md_file.stem] = md_file.read_text(encoding="utf-8")
 
     # Build model configs
-    model_names = [m.strip() for m in args.models.split(",")]
-    model_configs = [
-        {"provider": args.provider, "model": m, "base_url": args.base_url}
-        for m in model_names
-    ]
+    model_aliases = [m.strip() for m in args.models.split(",") if m.strip()]
 
-    # Create judge (uses same lmproxy session as the runner)
-    from c3_skillmix.runner import _OpenAIProvider, _ensure_lmproxy_session, _create_lmproxy_client
-    worker_id = _ensure_lmproxy_session("skillmix-judge")
-    judge_client = _create_lmproxy_client(worker_id)
-    judge_provider = _OpenAIProvider(judge_client, args.judge_model)
+    if args.config:
+        if not args.config.exists():
+            print(f"ERROR: config file not found: {args.config}")
+            return
+
+        from c1_providers.model_config import load_model_config
+        config = load_model_config(str(args.config))
+
+        missing = [m for m in model_aliases if m not in config.models]
+        if missing:
+            print(f"ERROR: model aliases not found in config: {', '.join(missing)}")
+            print(f"Available aliases: {', '.join(config.model_names)}")
+            return
+
+        model_configs = []
+        for alias in model_aliases:
+            entry = config.models[alias]
+            model_configs.append({
+                "provider": entry.provider,
+                "model": entry.litellm_model,
+                "base_url": entry.api_base,
+                "api_key": entry.api_key,
+                "alias": alias,
+            })
+
+        # Create judge from config if judge section exists
+        judge_entry = None
+        if config.judge_model_name:
+            judge_entry = config.get_judge_entry()
+        if judge_entry:
+            judge_provider = create_provider(
+                judge_entry.provider, judge_entry.litellm_model,
+                base_url=judge_entry.api_base, api_key=judge_entry.api_key,
+            )
+        else:
+            judge_provider = create_provider(args.judge_provider, args.judge_model)
+    else:
+        model_configs = [
+            {"provider": args.provider, "model": m, "base_url": args.base_url}
+            for m in model_aliases
+        ]
+        judge_provider = create_provider(args.judge_provider, args.judge_model)
+
     judge = LLMJudgeEvaluator(judge_provider)
 
     # Run

@@ -18,6 +18,7 @@ from c1_tools.stage_runner import StageResult, run_stage_command
 from c2_orchestration.stage_output_wirer import (
     build_stage_args,
     build_stage7_csv_args,
+    build_stage8_report_args,
     register_stage_outputs,
 )
 
@@ -94,6 +95,7 @@ def execute_pipeline(
     stage_range: str,
     repo_root: Path,
     clean: bool = False,
+    clean_stages: bool = False,
     verbose: bool = True,
     print_fn=None,
 ) -> List[StageResult]:
@@ -103,7 +105,8 @@ def execute_pipeline(
         profile: experiment configuration
         stage_range: stage range string ("all", "1-4", "5-7", etc.)
         repo_root: absolute path to kcg-ml-llm repository root
-        clean: if True, wipe the run directory before starting
+        clean: if True, wipe the entire run directory before starting
+        clean_stages: if True, wipe only the output of requested stages
         verbose: stream subprocess output to console
         print_fn: callable for status messages (default: print)
 
@@ -129,6 +132,22 @@ def execute_pipeline(
 
     # parse stage range
     stage_ids = parse_stage_range(stage_range)
+
+    # clean-stages mode: wipe only the requested stages' output
+    if clean_stages and not clean:
+        for sid in stage_ids:
+            stage = get_stage(sid)
+            if stage.output_dir:
+                stage_dir = run_dir / stage.output_dir
+                if stage_dir.exists():
+                    ui_info(f"CLEAN-STAGE: removing {stage_dir}")
+                    shutil.rmtree(stage_dir)
+            # also remove specific output files for stages with output_dir=""
+            for output_file in stage.output_files:
+                fpath = run_dir / output_file if not stage.output_dir else run_dir / stage.output_dir / output_file
+                if fpath.exists():
+                    ui_info(f"CLEAN-STAGE: removing {fpath}")
+                    fpath.unlink()
 
     # accumulate outputs from completed stages
     stage_outputs: Dict[str, Dict[str, str]] = {}
@@ -196,6 +215,12 @@ def execute_pipeline(
                 logs_dir, stage_outputs, verbose, print_fn,
             )
             results.extend(stage_results)
+        elif stage_id == "8":
+            stage_results = _execute_stage8(
+                stage, profile, run_dir, repo_root, pipeline_dir,
+                logs_dir, stage_outputs, verbose, print_fn,
+            )
+            results.extend(stage_results)
         else:
             args = build_stage_args(stage_id, profile, run_dir, repo_root, stage_outputs)
             log_path = logs_dir / f"stage{stage_id}-{stage.name}.log"
@@ -241,6 +266,12 @@ def _stage_output_exists(stage, run_dir: Path, profile: PipelineProfile) -> bool
             if not cross_dir.exists():
                 return False
             png_files = list(cross_dir.glob("*.png"))
+            return len(png_files) > 0
+        if stage.stage_id == "9":
+            viz_dir = run_dir / stage.output_dir
+            if not viz_dir.exists():
+                return False
+            png_files = list(viz_dir.glob("*.png"))
             return len(png_files) > 0
         return False
 
@@ -486,4 +517,47 @@ def _execute_stage7(stage, profile, run_dir, repo_root, pipeline_dir,
     results.append(csv_result)
 
     ui_stage_complete("7", result.duration_seconds + csv_result.duration_seconds)
+    return results
+
+
+def _execute_stage8(stage, profile, run_dir, repo_root, pipeline_dir,
+                    logs_dir, stage_outputs, verbose, print_fn):
+    """Execute stage 8 (SkillMix evaluation + report)."""
+    results = []
+
+    # command 1: run-skillmix
+    args = build_stage_args("8", profile, run_dir, repo_root, stage_outputs)
+    log_path = logs_dir / "stage8-skillmix.log"
+    result = run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="run-skillmix",
+        args=args,
+        log_path=log_path,
+        verbose=verbose,
+    )
+    result.stage_id = "8"
+    results.append(result)
+
+    if result.exit_code != 0:
+        ui_stage_fail("8", result.exit_code, result.log_path)
+        return results
+
+    # command 2: report
+    report_args = build_stage8_report_args(run_dir)
+    report_log_path = logs_dir / "stage8-report.log"
+    report_result = run_stage_command(
+        pipeline_dir=pipeline_dir,
+        command="report",
+        args=report_args,
+        log_path=report_log_path,
+        verbose=verbose,
+    )
+    report_result.stage_id = "8"
+    results.append(report_result)
+
+    if report_result.exit_code != 0:
+        ui_stage_fail("8", report_result.exit_code, report_result.log_path)
+        return results
+
+    ui_stage_complete("8", result.duration_seconds + report_result.duration_seconds)
     return results

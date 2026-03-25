@@ -14,7 +14,7 @@ from typing import List
 class PipelineProfile:
     # identity
     profile_name: str = "default"
-    run_dir: str = "llm-skills.extraction-pipeline/pipeline-runs/default"
+    run_dir: str = "llm-skills.extraction-pipeline/data/pipeline-runs/default-profile"
 
     # source data (stage 1a)
     dataset: str = "wikimedia/wikipedia"
@@ -50,13 +50,19 @@ class PipelineProfile:
     # skill extraction (stage 3)
     max_skills: int = 8
 
+    # skill composition (stage 4b)
+    compose_k_values: List[int] = field(default_factory=lambda: [2, 3])
+    compose_operators: List[str] = field(default_factory=lambda: ["seq"])
+
 
 MINIMAL_OVERRIDES = {
     "max_chunks": 1,
-    "tasks_per_chunk": 1,
-    "max_skills": 3,
+    "tasks_per_chunk": 2,
+    "max_skills": 2,
     "modes": ["singlecall"],
-    "eval_models": ["qwen2.5-3b"],
+    "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
+    "compose_k_values": [2],
+    "compose_operators": ["seq"],
     "zai_model": "",
     "anthropic_eval_model": "",
 }
