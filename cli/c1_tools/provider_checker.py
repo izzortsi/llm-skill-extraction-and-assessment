@@ -58,11 +58,15 @@ def check_lm_studio(url: str) -> CheckResult:
     """Check LM Studio local server."""
     try:
         import urllib.request
-        req = urllib.request.Request(f"{url}/models", method="GET")
+        base = url.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[:-3]
+        endpoint = f"{base}/v1/models"
+        req = urllib.request.Request(endpoint, method="GET")
         resp = urllib.request.urlopen(req, timeout=5)
         if resp.status == 200:
             return CheckResult("lm-studio", True, f"reachable at {url}")
-        return CheckResult("lm-studio", False, f"/v1/models returned {resp.status}")
+        return CheckResult("lm-studio", False, f"{endpoint} returned {resp.status}")
     except Exception as exc:
         return CheckResult("lm-studio", False, f"unreachable: {exc}")
 

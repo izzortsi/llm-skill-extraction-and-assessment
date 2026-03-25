@@ -91,10 +91,13 @@ def _probe_ollama(ollama_url: str) -> ProviderStatus:
 def _probe_lm_studio(lm_studio_url: str) -> ProviderStatus:
     """Probe LM Studio local server for available models."""
     status = ProviderStatus(name="lm-studio", reachable=False, base_url=lm_studio_url)
+    # Normalize: ensure URL ends with /v1 for the models endpoint
+    base = _strip_v1(lm_studio_url)
+    models_endpoint = f"{base}/v1/models"
     try:
-        resp = requests.get(f"{lm_studio_url}/models", timeout=3)
+        resp = requests.get(models_endpoint, timeout=3)
         if resp.status_code != 200:
-            status.message = f"/v1/models returned {resp.status_code}"
+            status.message = f"{models_endpoint} returned {resp.status_code}"
             return status
         data = resp.json()
         model_list = data.get("data", [])

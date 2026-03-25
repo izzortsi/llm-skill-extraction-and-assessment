@@ -413,21 +413,24 @@ def select_eval_models(providers: list) -> List[Dict[str, str]]:
 # ---------------------------------------------------------------------------
 
 def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
-    """Re-run discovery if the user changed lmproxy or ollama URLs."""
+    """Re-run discovery if the user changed any provider URL."""
     from c1_tools.provider_discovery import discover_providers
     from pathlib import Path
 
-    lmproxy_p = _provider_by_name(providers, "lmproxy")
-    ollama_p = _provider_by_name(providers, "ollama")
-
-    old_lmproxy = lmproxy_p.base_url if lmproxy_p else ""
-    old_ollama = ollama_p.base_url if ollama_p else ""
-
+    url_checks = [
+        ("lmproxy", "lmproxy_base_url"),
+        ("ollama", "ollama_url"),
+        ("iosys", "iosys_base_url"),
+        ("lm-studio", "lm_studio_url"),
+    ]
     changed = False
-    if profile.lmproxy_base_url != old_lmproxy:
-        changed = True
-    if profile.ollama_url != old_ollama:
-        changed = True
+    for provider_name, profile_field in url_checks:
+        p = _provider_by_name(providers, provider_name)
+        old_url = p.base_url if p else ""
+        new_url = getattr(profile, profile_field, "")
+        if new_url != old_url:
+            changed = True
+            break
 
     if not changed:
         return providers
@@ -438,6 +441,8 @@ def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
     new_providers = discover_providers(
         lmproxy_url=profile.lmproxy_base_url,
         ollama_url=profile.ollama_url,
+        iosys_url=profile.iosys_base_url,
+        lm_studio_url=profile.lm_studio_url,
         config_file=str(cfg_path) if cfg_path.exists() else "",
     )
     _display_discovery_summary(new_providers)
