@@ -239,7 +239,16 @@ def create_provider(
     if provider_name == "claude-code":
         import sys
         from pathlib import Path
-        cli_root = Path(__file__).resolve().parent.parent.parent / "llm-skills.cli"
+        # Walk up from providers.py to find repo root (contains llm-skills.cli/)
+        candidate = Path(__file__).resolve().parent
+        cli_root = None
+        for _i in range(6):
+            candidate = candidate.parent
+            if (candidate / "llm-skills.cli" / "c1_tools").is_dir():
+                cli_root = candidate / "llm-skills.cli"
+                break
+        if cli_root is None:
+            raise RuntimeError("cannot locate llm-skills.cli relative to providers.py")
         if str(cli_root) not in sys.path:
             sys.path.insert(0, str(cli_root))
         from c1_tools.claude_code_provider import ClaudeCodeProvider
