@@ -1,0 +1,41 @@
+profile_name: default
+run_dir: llm-skills.shared-data/skillmix-pipeline-run
+
+# source data (stage 1a)
+dataset: wikimedia/wikipedia
+subset: 20231101.en
+domain: language-skills
+max_chunks: 5
+chunk_size: 4000
+tasks_per_chunk: 2
+
+# extraction model (stages 1b, 3)
+extraction_provider: anthropic
+extraction_model: claude-opus-4-6
+
+# trace capture (stage 2)
+trace_provider: anthropic
+trace_model: claude-opus-4-6
+
+# evaluation (stage 5)
+config_file: llm-skills.llm-providers/configs/models.yaml
+ollama_url: http://localhost:11434/v1
+eval_models:
+  - qwen2.5:3b
+  - qwen2.5:7b
+modes:
+  - singlecall
+  - stepwise
+  - guided
+
+# optional API models (stage 5 legacy path)
+zai_model: glm-5-turbo
+zai_base_url: https://api.z.ai/api/coding/paas/v4
+anthropic_eval_model: claude-opus-4-6
+
+# judge (stage 5)
+judge_provider: anthropic
+judge_model: claude-opus-4-6
+
+# skill extraction (stage 3)
+max_skills: 8
