@@ -52,6 +52,7 @@ class PipelineProfile:
 
     # skill composition (stage 4b)
     compose_k_values: List[int] = field(default_factory=lambda: [2, 3, 4, 5])
+    compose_operators: List[str] = field(default_factory=lambda: ["seq", "par", "cond"])
 
 
 MINIMAL_OVERRIDES = {
@@ -61,6 +62,7 @@ MINIMAL_OVERRIDES = {
     "modes": ["singlecall"],
     "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
     "compose_k_values": [2],
+    "compose_operators": ["seq"],
     "zai_model": "",
     "anthropic_eval_model": "",
 }

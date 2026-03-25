@@ -104,6 +104,8 @@ def build_stage_args(
             "--k",
         ]
         args += [str(k) for k in profile.compose_k_values]
+        args += ["--operators"]
+        args += profile.compose_operators
         args.append("-v")
         return args
 
