@@ -1,5 +1,5 @@
 profile_name: default
-run_dir: llm-skills.extraction-pipeline/pipeline-runs/default
+run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/default-profile
 
 # source data (stage 1a)
 dataset: wikimedia/wikipedia

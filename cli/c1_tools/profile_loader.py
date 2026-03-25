@@ -41,11 +41,19 @@ def load_profile(name: str) -> PipelineProfile:
 
 
 def save_profile(profile: PipelineProfile) -> Path:
-    """Save a profile to YAML. Returns the file path."""
+    """Save a profile to YAML. Returns the file path.
+
+    If run_dir still has the default value, auto-set it to use the profile name.
+    """
     import yaml
 
     _ensure_profiles_dir()
     path = PROFILES_DIR / f"{profile.profile_name}.yaml"
+
+    # auto-set run_dir based on profile name when using default
+    default_run_dir = PipelineProfile().run_dir
+    if profile.run_dir == default_run_dir and profile.profile_name != "default":
+        profile.run_dir = f"llm-skills.extraction-pipeline/data/pipeline-runs/{profile.profile_name}-profile"
 
     data = {}
     for key, value in profile.__dict__.items():

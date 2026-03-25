@@ -145,7 +145,7 @@ configuration needed for a pipeline run:
 
 ```yaml
 profile_name: my-experiment
-run_dir: llm-skills.extraction-pipeline/pipeline-runs/my-experiment
+run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/my-experiment-profile
 
 # source data (stage 1a)
 dataset: wikimedia/wikipedia

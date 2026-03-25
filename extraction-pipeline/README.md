@@ -33,7 +33,7 @@ python -m c4_cli.main format            --help   # JSON/markdown converter
 ## output structure
 
 ```
-pipeline-runs/default/
+data/pipeline-runs/default-profile/
     stage1-task-extraction/
         passages.json, tasks.json, tasks-md/
     stage2-trace-capture/
