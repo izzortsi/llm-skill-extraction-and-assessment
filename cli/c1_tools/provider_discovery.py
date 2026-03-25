@@ -234,7 +234,7 @@ def discover_providers(
     ollama_url: str = "http://localhost:11434/v1",
     iosys_url: str = "http://llm.iosys.net/v1",
     lm_studio_url: str = "http://localhost:1234/v1",
-    zai_url: str = "https://open.bigmodel.cn/api/paas/v4",
+    zai_url: str = "https://api.z.ai/api/coding/paas/v4",
     config_file: str = "",
 ) -> List[ProviderStatus]:
     """Probe all known providers and return their status."""
