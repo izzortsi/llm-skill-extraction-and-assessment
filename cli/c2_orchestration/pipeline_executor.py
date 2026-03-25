@@ -21,6 +21,7 @@ from c2_orchestration.stage_output_wirer import (
     build_stage7_csv_args,
     build_stage8_report_args,
     register_stage_outputs,
+    provider_env,
 )
 
 try:
@@ -89,6 +90,29 @@ def ui_info(msg):
         print_stage_info(msg)
     else:
         _plain_print(f"  {msg}")
+
+
+def _build_stage_env(profile, stage_id: str) -> dict:
+    """Build extra env vars for a stage based on which provider it uses."""
+    # stages 1b, 2, 3, 4 use extraction/trace providers
+    # stages 5, 8 use eval_models providers (handled via generated models.yaml)
+    # stages 6, 9 are visualization (no LLM)
+    # stage 7 is traceability (no LLM)
+    if stage_id in ("1b", "3", "4"):
+        return provider_env(profile.extraction_provider, profile)
+    if stage_id == "2":
+        return provider_env(profile.trace_provider, profile)
+    if stage_id in ("5", "8"):
+        # eval stages: env from first eval_model provider (for judge base_url)
+        env = {}
+        if profile.eval_models:
+            first_provider = profile.eval_models[0].get("provider", "") if isinstance(profile.eval_models[0], dict) else ""
+            env.update(provider_env(first_provider, profile))
+        # judge provider env may differ
+        judge_env = provider_env(profile.judge_provider, profile)
+        env.update(judge_env)
+        return env
+    return {}
 
 
 def _profile_uses_lmproxy(profile) -> bool:
@@ -223,6 +247,15 @@ def execute_pipeline(
         if lmproxy_worker_id:
             os.environ["LMPROXY_WORKER_ID"] = lmproxy_worker_id
 
+    # Set provider env vars globally so all stage subprocesses inherit them.
+    # Uses extraction_provider as the primary — covers stages 1b-4.
+    # Stages 5/8 use generated models.yaml which has api_base per model.
+    _saved_env = {}
+    stage_extra_env = provider_env(profile.extraction_provider, profile)
+    for k, v in stage_extra_env.items():
+        _saved_env[k] = os.environ.get(k)
+        os.environ[k] = v
+
     try:
         for stage_id in stage_ids:
             stage = get_stage(stage_id)
@@ -319,6 +352,13 @@ def execute_pipeline(
         if lmproxy_worker_id:
             _end_lmproxy_session(profile, lmproxy_worker_id, print_fn)
             os.environ.pop("LMPROXY_WORKER_ID", None)
+
+        # Restore env vars
+        for k, v in _saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
 
     return results
 

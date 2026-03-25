@@ -29,6 +29,7 @@ def run_stage_command(
     args: List[str],
     log_path: Path,
     verbose: bool = False,
+    extra_env: dict = None,
 ) -> StageResult:
     """Run a single CLI command inside a pipeline directory.
 
@@ -55,6 +56,8 @@ def run_stage_command(
     import os
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    if extra_env:
+        env.update(extra_env)
 
     start_time = time.time()
 

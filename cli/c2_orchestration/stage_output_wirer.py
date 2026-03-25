@@ -16,16 +16,38 @@ from c0_config.pipeline_profile import PipelineProfile
 
 
 def _provider_args(provider, model, profile):
-    """Translate a profile provider value into CLI args for a stage."""
-    if provider == "lmproxy":
-        return ["--provider", "openai", "--base-url", profile.lmproxy_base_url, "--model", model]
-    if provider == "ollama":
-        return ["--provider", "openai", "--base-url", profile.ollama_url, "--model", model]
-    if provider == "iosys":
-        return ["--provider", "openai", "--base-url", profile.iosys_base_url, "--model", model]
+    """Translate a profile provider value into CLI args for a stage.
+
+    For providers that need a base_url (lmproxy, ollama, iosys), we pass
+    --provider openai --model <model> and rely on OPENAI_BASE_URL env var
+    (set by provider_env()) rather than --base-url, because not all stages
+    accept --base-url as a CLI flag.
+    """
+    if provider in ("lmproxy", "ollama", "iosys"):
+        return ["--provider", "openai", "--model", model]
     if provider == "claude-code":
         return ["--provider", "claude-code", "--model", model]
     return ["--provider", provider, "--model", model]
+
+
+def provider_env(provider, profile):
+    """Return env vars dict to set for a stage subprocess based on provider.
+
+    Sets OPENAI_BASE_URL so that create_provider("openai", model) inside the
+    subprocess connects to the right endpoint.
+    """
+    if provider == "lmproxy":
+        return {"OPENAI_BASE_URL": profile.lmproxy_base_url}
+    if provider == "ollama":
+        return {"OPENAI_BASE_URL": profile.ollama_url}
+    if provider == "iosys":
+        env = {"OPENAI_BASE_URL": profile.iosys_base_url}
+        import os
+        iosys_key = os.environ.get("IOSYS_API_KEY", "")
+        if iosys_key:
+            env["OPENAI_API_KEY"] = iosys_key
+        return env
+    return {}
 
 
 def build_stage_args(
