@@ -138,21 +138,26 @@ def run_skillmix_experiment(
         cfg_provider = model_cfg.get("provider", "")
         model_base_url = model_cfg.get("base_url", "")
 
+        # Strip litellm "openai/" prefix — backends expect bare model names
+        raw_model = model_cfg.get("model", "")
+        if raw_model.startswith("openai/"):
+            raw_model = raw_model[len("openai/"):]
+
         if cfg_provider == "claude-code":
             # Use ClaudeCodeProvider directly via create_provider
             from c1_providers.providers import create_provider
-            provider = create_provider("claude-code", model_cfg.get("model", ""))
+            provider = create_provider("claude-code", raw_model)
         elif model_base_url:
             # config-driven: create client pointing at the model's own endpoint
             client = openai.OpenAI(
                 base_url=model_base_url,
                 api_key=model_cfg.get("api_key", "na"),
             )
-            provider = _OpenAIProvider(client, model_cfg.get("model", ""))
+            provider = _OpenAIProvider(client, raw_model)
         else:
             # fallback: use lmproxy
             client = lmproxy_client
-            provider = _OpenAIProvider(client, model_cfg.get("model", ""))
+            provider = _OpenAIProvider(client, raw_model)
         model_name = model_cfg.get("alias", model_cfg.get("model", "unknown"))
 
         if verbose:
