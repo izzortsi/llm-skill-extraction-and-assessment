@@ -14,7 +14,7 @@ from typing import List
 class PipelineProfile:
     # identity
     profile_name: str = "default"
-    run_dir: str = "llm-skills.shared-data/skillmix-pipeline-run"
+    run_dir: str = "llm-skills.extraction-pipeline/pipeline-runs/default"
 
     # source data (stage 1a)
     dataset: str = "wikimedia/wikipedia"
