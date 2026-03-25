@@ -45,9 +45,16 @@ def run_stage_command(
     Returns:
         StageResult with exit code and timing
     """
-    full_cmd = [sys.executable, "-m", "c4_cli.main", command] + args
+    full_cmd = [sys.executable, "-u", "-m", "c4_cli.main", command] + args
 
     log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # PYTHONUNBUFFERED=1 forces line-buffered output from the subprocess
+    # so that verbose streaming shows progress in real time instead of
+    # waiting for the default 4KB pipe buffer to fill.
+    import os
+    env = os.environ.copy()
+    env["PYTHONUNBUFFERED"] = "1"
 
     start_time = time.time()
 
@@ -59,6 +66,7 @@ def run_stage_command(
             stderr=subprocess.STDOUT,
             text=True,
             encoding="utf-8",
+            env=env,
         )
 
         for line in process.stdout:
