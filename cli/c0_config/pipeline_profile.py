@@ -35,7 +35,7 @@ class PipelineProfile:
     # evaluation (stage 5)
     config_file: str = "llm-skills.llm-providers/configs/models.yaml"
     ollama_url: str = "http://localhost:11434/v1"
-    eval_models: List[str] = field(default_factory=lambda: ["qwen2.5:3b", "qwen2.5:7b"])
+    eval_models: List[str] = field(default_factory=lambda: ["qwen2.5-3b", "qwen2.5-7b"])
     modes: List[str] = field(default_factory=lambda: ["singlecall", "stepwise", "guided"])
 
     # optional API models (stage 5 legacy path)
@@ -56,7 +56,7 @@ MINIMAL_OVERRIDES = {
     "tasks_per_chunk": 1,
     "max_skills": 3,
     "modes": ["singlecall"],
-    "eval_models": ["qwen2.5:3b"],
+    "eval_models": ["qwen2.5-3b"],
     "zai_model": "",
     "anthropic_eval_model": "",
 }

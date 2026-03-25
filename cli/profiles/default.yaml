@@ -21,8 +21,8 @@ trace_model: claude-opus-4-6
 config_file: llm-skills.llm-providers/configs/models.yaml
 ollama_url: http://localhost:11434/v1
 eval_models:
-  - qwen2.5:3b
-  - qwen2.5:7b
+  - qwen2.5-3b
+  - qwen2.5-7b
 modes:
   - singlecall
   - stepwise
