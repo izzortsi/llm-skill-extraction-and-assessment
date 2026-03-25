@@ -14,11 +14,11 @@ datasets>=2.14.0
 matplotlib>=3.3.0
 numpy>=1.20.0
 
-# optional: interactive setup arrow-key prompts (falls back to input())
-# InquirerPy>=0.3.4
+# interactive setup arrow-key prompts (falls back to input() if absent)
+InquirerPy>=0.3.4
 
-# optional: colored terminal output (falls back to plain text)
-# rich>=10.0.0
+# colored terminal output (falls back to plain text if absent)
+rich>=10.0.0
 
 # testing
-# pytest>=7.0.0
+pytest>=7.0.0
