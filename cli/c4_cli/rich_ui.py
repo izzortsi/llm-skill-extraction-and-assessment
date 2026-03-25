@@ -302,7 +302,7 @@ def print_profile(profile) -> None:
         table.add_row("[cyan]Evaluation[/cyan]", "")
         table.add_row("  config_file", profile.config_file)
         table.add_row("  modes", ", ".join(profile.modes))
-        table.add_row("  eval_models", ", ".join(profile.eval_models))
+        table.add_row("  eval_models", ", ".join(entry["model"] for entry in profile.eval_models))
         table.add_row("  ollama_url", profile.ollama_url)
         table.add_row("", "")
         table.add_row("[cyan]Judge[/cyan]", "")

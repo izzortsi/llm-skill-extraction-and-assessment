@@ -122,7 +122,7 @@ def build_stage_args(
             ]
             # pass --models to restrict evaluation to profile's eval_models subset
             if profile.eval_models:
-                args += ["--models", ",".join(profile.eval_models)]
+                args += ["--models", ",".join(entry["model"] for entry in profile.eval_models)]
             return args
         else:
             raise ValueError(
@@ -158,7 +158,7 @@ def build_stage_args(
         args = [
             "--tasks", stage_outputs.get("1b", {}).get("tasks", str(stage1_dir / "tasks.json")),
             "--skills-dir", str(stage4b_dir),
-            "--models", ",".join(profile.eval_models),
+            "--models", ",".join(entry["model"] for entry in profile.eval_models),
             "--output-dir", str(stage8_dir),
             "-v",
         ]
