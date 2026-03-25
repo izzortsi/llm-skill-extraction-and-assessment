@@ -90,6 +90,15 @@ def build_stage_args(
             "-v",
         ]
 
+    if stage_id == "4b":
+        stage4b_dir = run_dir / "stage4b-skill-composition"
+        atomic_md_dir = stage4b_dir / "atomic-skills-md"
+        return [
+            "--atomic-dir", str(atomic_md_dir),
+            "--output-dir", str(stage4b_dir),
+            "-v",
+        ]
+
     if stage_id == "5":
         config_path = repo_root / profile.config_file
         if config_path.exists():

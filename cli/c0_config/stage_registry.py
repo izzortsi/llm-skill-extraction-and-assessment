@@ -61,6 +61,16 @@ STAGES = [
         depends_on=["3"],
     ),
     PipelineStage(
+        stage_id="4b",
+        name="compose-skills",
+        description="Generate composed skills from verified atomic skills (SkillMix)",
+        pipeline_dir="llm-skills.extraction-pipeline",
+        commands=["compose-skills"],
+        output_dir="stage4b-skill-composition",
+        output_files=[],  # dynamic: composed skill .md files
+        depends_on=["4"],
+    ),
+    PipelineStage(
         stage_id="5",
         name="corpus-evaluation",
         description="Evaluate skill injection across models and scaffolding modes",
@@ -130,12 +140,13 @@ def parse_stage_range(range_str: str) -> list:
     """Parse a stage range string into a list of stage IDs.
 
     Accepted formats:
-        "all"          -> ["1a", "1b", "2", "3", "4", "5", "6", "7"]
+        "all"          -> ["1a", "1b", "2", "3", "4", "4b", "5", "6", "7"]
         "1-4"          -> ["1a", "1b", "2", "3", "4"]
+        "1-4b"         -> ["1a", "1b", "2", "3", "4", "4b"]
         "5-7"          -> ["5", "6", "7"]
         "1a,1b,5"      -> ["1a", "1b", "5"]
         "3"            -> ["3"]
-        "extraction"   -> ["1a", "1b", "2", "3", "4"]
+        "extraction"   -> ["1a", "1b", "2", "3", "4", "4b"]
         "evaluation"   -> ["5", "6", "7"]
     """
     range_str = range_str.strip().lower()
@@ -144,7 +155,7 @@ def parse_stage_range(range_str: str) -> list:
         return list(ALL_STAGE_IDS)
 
     if range_str == "extraction":
-        return ["1a", "1b", "2", "3", "4"]
+        return ["1a", "1b", "2", "3", "4", "4b"]
 
     if range_str == "evaluation":
         return ["5", "6", "7"]
