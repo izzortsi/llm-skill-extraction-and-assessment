@@ -31,7 +31,7 @@ python3 -m c4_cli.main run [options]
 options:
   --stages RANGE       all, 1-4, 5-8, extraction, evaluation, skillsbench, skillmix, 1a,3,5
   --profile NAME       named profile from profiles/ directory
-  --minimal            1 chunk, 1 task/chunk, 2 skills, singlecall, 2 models
+  --minimal            1 chunk, 2 tasks/chunk, 2 skills, k=2, singlecall, 2 models
   --clean              wipe previous output and re-run from scratch
   --interactive        build profile via guided prompts before running
   --run-dir PATH       override output directory
@@ -178,8 +178,9 @@ judge_model: claude-opus-4-6
 max_skills: 8
 ```
 
-the `--minimal` flag overrides any profile with: 1 chunk, 1 task/chunk, 2 skills,
-singlecall mode only, 2 Ollama models (qwen2.5-3b, qwen2.5-7b), no ZAI or Anthropic eval.
+the `--minimal` flag overrides any profile with: 1 chunk, 2 tasks/chunk, 2 skills,
+k=2 compositions only, singlecall mode, 2 Ollama models (qwen2.5-3b, qwen2.5-7b),
+no ZAI or Anthropic eval.
 
 ## crash recovery
 

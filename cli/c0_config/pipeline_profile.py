@@ -56,7 +56,7 @@ class PipelineProfile:
 
 MINIMAL_OVERRIDES = {
     "max_chunks": 1,
-    "tasks_per_chunk": 1,
+    "tasks_per_chunk": 2,
     "max_skills": 2,
     "modes": ["singlecall"],
     "eval_models": ["qwen2.5-3b", "qwen2.5-7b"],
