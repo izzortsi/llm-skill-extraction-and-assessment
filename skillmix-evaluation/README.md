@@ -27,5 +27,5 @@ c4_cli/            main.py, run_skillmix.py, report.py
 
 ## dependencies
 
-- llm-skills.llm-providers (LLM provider abstraction)
+- lmproxy (OpenAI-compatible LLM proxy, running at LMPROXY_BASE_URL)
 - llm-skills.skillsbench-evaluation (shared evaluation types)
