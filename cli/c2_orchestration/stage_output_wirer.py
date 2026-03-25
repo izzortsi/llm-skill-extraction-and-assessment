@@ -21,6 +21,8 @@ def _provider_args(provider, model, profile):
         return ["--provider", "openai", "--base-url", profile.lmproxy_base_url, "--model", model]
     if provider == "ollama":
         return ["--provider", "openai", "--base-url", profile.ollama_url, "--model", model]
+    if provider == "iosys":
+        return ["--provider", "openai", "--base-url", profile.iosys_base_url, "--model", model]
     if provider == "claude-code":
         return ["--provider", "claude-code", "--model", model]
     return ["--provider", provider, "--model", model]

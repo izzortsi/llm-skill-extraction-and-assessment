@@ -88,6 +88,30 @@ def _probe_ollama(ollama_url: str) -> ProviderStatus:
     return status
 
 
+def _probe_iosys(iosys_url: str) -> ProviderStatus:
+    """Probe iosys LLM inference API for available models."""
+    status = ProviderStatus(name="iosys", reachable=False, base_url=iosys_url)
+    api_key = os.environ.get("IOSYS_API_KEY", "")
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    try:
+        resp = requests.get(f"{iosys_url}/models", headers=headers, timeout=3)
+        if resp.status_code != 200:
+            status.message = f"/v1/models returned {resp.status_code}"
+            return status
+        data = resp.json()
+        model_list = data.get("data", [])
+        status.models = [m.get("id", "") for m in model_list if m.get("id")]
+        status.reachable = True
+        status.message = f"{len(status.models)} models"
+        if not api_key:
+            status.message += " (set IOSYS_API_KEY for auth)"
+    except Exception as exc:
+        status.message = str(exc)
+    return status
+
+
 def _check_anthropic() -> ProviderStatus:
     """Check Anthropic API key availability (no network call)."""
     status = ProviderStatus(name="anthropic", reachable=False, base_url="https://api.anthropic.com")
@@ -164,6 +188,7 @@ def _check_claude_code() -> ProviderStatus:
 def discover_providers(
     lmproxy_url: str = "http://localhost:8080/v1",
     ollama_url: str = "http://localhost:11434/v1",
+    iosys_url: str = "http://llm.iosys.net/v1",
     config_file: str = "",
 ) -> List[ProviderStatus]:
     """Probe all known providers and return their status."""
@@ -175,8 +200,9 @@ def discover_providers(
             lmproxy_status.message += f", {len(lmproxy_status.models)} models"
 
     ollama_status = _probe_ollama(ollama_url)
+    iosys_status = _probe_iosys(iosys_url)
     anthropic_status = _check_anthropic()
     openai_status = _check_openai()
     claude_status = _check_claude_code()
 
-    return [lmproxy_status, ollama_status, anthropic_status, openai_status, claude_status]
+    return [lmproxy_status, ollama_status, iosys_status, anthropic_status, openai_status, claude_status]

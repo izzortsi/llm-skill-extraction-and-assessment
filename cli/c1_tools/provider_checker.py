@@ -54,6 +54,22 @@ def check_lmproxy(url: str) -> CheckResult:
         return CheckResult("lmproxy", False, f"unreachable: {exc}")
 
 
+def check_iosys(url: str) -> CheckResult:
+    """Check iosys LLM inference API."""
+    try:
+        import urllib.request
+        api_key = os.environ.get("IOSYS_API_KEY", "")
+        req = urllib.request.Request(f"{url}/models", method="GET")
+        if api_key:
+            req.add_header("Authorization", f"Bearer {api_key}")
+        resp = urllib.request.urlopen(req, timeout=5)
+        if resp.status == 200:
+            return CheckResult("iosys", True, f"reachable at {url}")
+        return CheckResult("iosys", False, f"/v1/models returned {resp.status}")
+    except Exception as exc:
+        return CheckResult("iosys", False, f"unreachable: {exc}")
+
+
 def check_anthropic_key() -> CheckResult:
     """Check if Anthropic API key or OAuth is configured."""
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -122,5 +138,20 @@ def run_preflight_checks(profile) -> List[CheckResult]:
         )
         if uses_lmproxy:
             results.append(check_lmproxy(profile.lmproxy_base_url))
+
+    # iosys check
+    if hasattr(profile, "iosys_base_url") and profile.iosys_base_url:
+        uses_iosys = (
+            getattr(profile, "extraction_provider", "") == "iosys"
+            or getattr(profile, "trace_provider", "") == "iosys"
+            or getattr(profile, "judge_provider", "") == "iosys"
+            or any(
+                entry.get("provider") == "iosys"
+                for entry in getattr(profile, "eval_models", [])
+                if isinstance(entry, dict)
+            )
+        )
+        if uses_iosys:
+            results.append(check_iosys(profile.iosys_base_url))
 
     return results

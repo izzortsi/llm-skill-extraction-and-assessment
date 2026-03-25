@@ -36,6 +36,9 @@ def _resolve_litellm_model(entry):
     if provider == "openai":
         return "openai/" + model
 
+    if provider == "iosys":
+        return "openai/" + model
+
     # lmproxy, ollama, or unknown: apply heuristic
     # converts trailing -<version> to :<version>, e.g. qwen2.5-3b -> qwen2.5:3b
     converted = re.sub(r"-(\d[\d.]*[a-zA-Z]?)$", r":\1", model)
@@ -53,6 +56,9 @@ def _build_model_entry(entry, profile):
         model_entry["api_key_env"] = "ANTHROPIC_API_KEY"
     elif provider == "ollama":
         model_entry["api_base"] = profile.ollama_url
+    elif provider == "iosys":
+        model_entry["api_base"] = profile.iosys_base_url
+        model_entry["api_key_env"] = "IOSYS_API_KEY"
     elif provider == "claude-code":
         model_entry["provider"] = "claude-code"
     else:

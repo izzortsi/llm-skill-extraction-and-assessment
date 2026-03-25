@@ -1,0 +1,39 @@
+profile_name: iosys
+run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/iosys-profile
+iosys_base_url: "http://llm.iosys.net/v1"
+
+# source data (stage 1a)
+dataset: wikimedia/wikipedia
+subset: 20231101.en
+domain: language-skills
+max_chunks: 1
+chunk_size: 4000
+tasks_per_chunk: 2
+
+# extraction model (stages 1b, 3, 4)
+extraction_provider: iosys
+extraction_model: Qwen3.5-35B-A3B
+
+# trace capture (stage 2)
+trace_provider: iosys
+trace_model: Qwen3.5-35B-A3B
+
+# evaluation (stages 5, 8)
+eval_models:
+  - provider: iosys
+    model: Qwen3.5-35B-A3B
+modes:
+  - singlecall
+
+# judge (stages 5, 8)
+judge_provider: iosys
+judge_model: Qwen3.5-35B-A3B
+
+# skill extraction (stage 3)
+max_skills: 2
+
+# skill composition (stage 4b)
+compose_k_values:
+  - 2
+compose_operators:
+  - seq
