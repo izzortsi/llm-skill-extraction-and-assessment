@@ -135,17 +135,24 @@ def run_skillmix_experiment(
     episode_count = 0
 
     for model_cfg in model_configs:
+        cfg_provider = model_cfg.get("provider", "")
         model_base_url = model_cfg.get("base_url", "")
-        if model_base_url:
+
+        if cfg_provider == "claude-code":
+            # Use ClaudeCodeProvider directly via create_provider
+            from c1_providers.providers import create_provider
+            provider = create_provider("claude-code", model_cfg.get("model", ""))
+        elif model_base_url:
             # config-driven: create client pointing at the model's own endpoint
             client = openai.OpenAI(
                 base_url=model_base_url,
                 api_key=model_cfg.get("api_key", "na"),
             )
+            provider = _OpenAIProvider(client, model_cfg.get("model", ""))
         else:
             # fallback: use lmproxy
             client = lmproxy_client
-        provider = _OpenAIProvider(client, model_cfg.get("model", ""))
+            provider = _OpenAIProvider(client, model_cfg.get("model", ""))
         model_name = model_cfg.get("alias", model_cfg.get("model", "unknown"))
 
         if verbose:

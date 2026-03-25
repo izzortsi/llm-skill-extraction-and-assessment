@@ -28,7 +28,7 @@ def _resolve_litellm_model(entry):
     model = entry["model"]
 
     if provider == "claude-code":
-        return "claude-code"
+        return model  # pass through the actual model name (e.g. claude-sonnet-4-6)
 
     if provider == "anthropic":
         return model
