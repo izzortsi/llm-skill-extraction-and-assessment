@@ -62,7 +62,7 @@ def main() -> None:
             profile = PipelineProfile(profile_name=args.name)
             path = save_profile(profile)
             console.print(f"Created profile '[cyan]{args.name}[/cyan]' at {path}")
-            console.print(f"Edit the YAML file, then run: [bold]llm-skills run --profile {args.name}[/bold]")
+            console.print(f"Edit the YAML file, then run: [bold]./llm-skills run --profile {args.name}[/bold]")
 
     elif args.subcommand == "show":
         if not args.name:
