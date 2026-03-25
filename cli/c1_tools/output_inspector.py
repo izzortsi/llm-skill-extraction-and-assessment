@@ -22,18 +22,20 @@ class StageStatus:
     missing_paths: List[str]  # paths that do not exist
 
 
-def inspect_run_dir(run_dir: Path) -> List[StageStatus]:
-    """Check all stages for existing output in the run directory.
+def _check_stage_complete(stage: PipelineStage, run_dir: Path) -> tuple:
+    """Check if a stage's output exists on disk.
 
-    Returns a list of StageStatus for each stage, indicating whether
-    the stage's expected output files exist.
+    For stages with declared output_files, check those specific files.
+    For stages with dynamic output (output_files=[]), check if their
+    output_dir contains any files.
+
+    Returns (is_complete, existing_paths, missing_paths).
     """
-    results = []
+    existing = []
+    missing = []
 
-    for stage in STAGES:
-        existing = []
-        missing = []
-
+    if stage.output_files:
+        # static output: check declared files
         for output_file in stage.output_files:
             if stage.output_dir:
                 path = run_dir / stage.output_dir / output_file
@@ -45,7 +47,35 @@ def inspect_run_dir(run_dir: Path) -> List[StageStatus]:
             else:
                 missing.append(str(path))
 
-        is_complete = len(stage.output_files) > 0 and len(missing) == 0
+        is_complete = len(missing) == 0
+    elif stage.output_dir:
+        # dynamic output: check if output_dir contains any files
+        output_dir = run_dir / stage.output_dir
+        if output_dir.exists():
+            found_files = list(output_dir.rglob("*.json")) + list(output_dir.rglob("*.png"))
+            if len(found_files) > 0:
+                existing = [str(f) for f in found_files[:5]]  # cap at 5 for display
+                is_complete = True
+            else:
+                is_complete = False
+        else:
+            is_complete = False
+    else:
+        is_complete = False
+
+    return is_complete, existing, missing
+
+
+def inspect_run_dir(run_dir: Path) -> List[StageStatus]:
+    """Check all stages for existing output in the run directory.
+
+    Returns a list of StageStatus for each stage, indicating whether
+    the stage's expected output files exist.
+    """
+    results = []
+
+    for stage in STAGES:
+        is_complete, existing, missing = _check_stage_complete(stage, run_dir)
 
         results.append(StageStatus(
             stage_id=stage.stage_id,
