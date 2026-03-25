@@ -20,8 +20,8 @@ from pathlib import Path
 from c1_providers.model_config import load_model_config
 from c1_providers.providers import create_provider
 from c2_evaluation.llm_judge import LLMJudgeEvaluator
-from c2_extraction.task_extractor import load_extracted_tasks
-from c2_extraction.skill_extractor import load_extracted_skills
+from c1_types.extracted_task import load_extracted_tasks
+from c1_types.extracted_skill import load_extracted_skills
 from c3_skillsbench.corpus_harness import (
     run_corpus_evaluation,
     run_multi_model_evaluation,

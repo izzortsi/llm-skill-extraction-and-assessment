@@ -32,8 +32,8 @@ from c0_config.skill_injection import (
     get_default_system_prompt,
 )
 from c2_evaluation.llm_judge import LLMJudgeEvaluator, JudgeResult
-from c2_extraction.task_extractor import ExtractedTask
-from c2_extraction.skill_extractor import ExtractedSkill
+from c1_types.extracted_task import ExtractedTask
+from c1_types.extracted_skill import ExtractedSkill
 
 
 # ---------------------------------------------------------------------------
