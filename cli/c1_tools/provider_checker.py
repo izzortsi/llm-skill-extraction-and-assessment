@@ -71,6 +71,23 @@ def check_lm_studio(url: str) -> CheckResult:
         return CheckResult("lm-studio", False, f"unreachable: {exc}")
 
 
+def check_zai(url: str) -> CheckResult:
+    """Check Z.AI (Zhipu) API."""
+    try:
+        api_key = os.environ.get("ZHIPU_API_KEY", "")
+        if not api_key:
+            return CheckResult("zai", False, "no ZHIPU_API_KEY found")
+        import urllib.request
+        req = urllib.request.Request(f"{url}/models", method="GET")
+        req.add_header("Authorization", f"Bearer {api_key}")
+        resp = urllib.request.urlopen(req, timeout=5)
+        if resp.status == 200:
+            return CheckResult("zai", True, f"reachable at {url}")
+        return CheckResult("zai", False, f"/models returned {resp.status}")
+    except Exception as exc:
+        return CheckResult("zai", False, f"unreachable: {exc}")
+
+
 def check_iosys(url: str) -> CheckResult:
     """Check iosys LLM inference API."""
     try:
@@ -205,5 +222,20 @@ def run_preflight_checks(profile) -> List[CheckResult]:
         )
         if uses_lm_studio:
             results.append(check_lm_studio(profile.lm_studio_url))
+
+    # zai check
+    if hasattr(profile, "zai_url") and profile.zai_url:
+        uses_zai = (
+            getattr(profile, "extraction_provider", "") == "zai"
+            or getattr(profile, "trace_provider", "") == "zai"
+            or getattr(profile, "judge_provider", "") == "zai"
+            or any(
+                entry.get("provider") == "zai"
+                for entry in getattr(profile, "eval_models", [])
+                if isinstance(entry, dict)
+            )
+        )
+        if uses_zai:
+            results.append(check_zai(profile.zai_url))
 
     return results

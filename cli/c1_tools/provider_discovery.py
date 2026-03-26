@@ -109,6 +109,29 @@ def _probe_lm_studio(lm_studio_url: str) -> ProviderStatus:
     return status
 
 
+def _probe_zai(zai_url: str) -> ProviderStatus:
+    """Probe Z.AI (Zhipu) API for available models."""
+    status = ProviderStatus(name="zai", reachable=False, base_url=zai_url)
+    api_key = os.environ.get("ZHIPU_API_KEY", "")
+    if not api_key:
+        status.message = "no ZHIPU_API_KEY found"
+        return status
+    headers = {"Authorization": f"Bearer {api_key}"}
+    try:
+        resp = requests.get(f"{zai_url}/models", headers=headers, timeout=5)
+        if resp.status_code != 200:
+            status.message = f"/models returned {resp.status_code}"
+            return status
+        data = resp.json()
+        model_list = data.get("data", [])
+        status.models = [m.get("id", "") for m in model_list if m.get("id")]
+        status.reachable = True
+        status.message = f"{len(status.models)} models"
+    except Exception as exc:
+        status.message = str(exc)
+    return status
+
+
 def _probe_iosys(iosys_url: str) -> ProviderStatus:
     """Probe iosys LLM inference API for available models."""
     status = ProviderStatus(name="iosys", reachable=False, base_url=iosys_url)
@@ -229,6 +252,7 @@ def discover_providers(
     ollama_url: str = "http://localhost:11434/v1",
     iosys_url: str = "http://llm.iosys.net/v1",
     lm_studio_url: str = "http://localhost:1234/v1",
+    zai_url: str = "https://api.z.ai/api/coding/paas/v4",
     config_file: str = "",
 ) -> List[ProviderStatus]:
     """Probe all known providers and return their status."""
@@ -242,9 +266,10 @@ def discover_providers(
     ollama_status = _probe_ollama(ollama_url)
     iosys_status = _probe_iosys(iosys_url)
     lm_studio_status = _probe_lm_studio(lm_studio_url)
+    zai_status = _probe_zai(zai_url)
     anthropic_oauth_status = _check_anthropic_oauth()
     anthropic_status = _check_anthropic()
     openai_status = _check_openai()
     claude_status = _check_claude_code()
 
-    return [lmproxy_status, ollama_status, iosys_status, lm_studio_status, anthropic_oauth_status, anthropic_status, openai_status, claude_status]
+    return [lmproxy_status, ollama_status, iosys_status, lm_studio_status, zai_status, anthropic_oauth_status, anthropic_status, openai_status, claude_status]
