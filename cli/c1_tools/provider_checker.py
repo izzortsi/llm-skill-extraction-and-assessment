@@ -87,6 +87,18 @@ def check_iosys(url: str) -> CheckResult:
         return CheckResult("iosys", False, f"unreachable: {exc}")
 
 
+def check_anthropic_oauth() -> CheckResult:
+    """Check if anthropic-oauth package is installed with valid tokens."""
+    try:
+        from anthropic_oauth import OAuthManager
+    except ImportError:
+        return CheckResult("anthropic-oauth", False, "anthropic-oauth not installed")
+    manager = OAuthManager()
+    if manager.has_valid_tokens():
+        return CheckResult("anthropic-oauth", True, "OAuth tokens valid")
+    return CheckResult("anthropic-oauth", False, "no valid OAuth tokens (run: anthropic-oauth)")
+
+
 def check_anthropic_key() -> CheckResult:
     """Check if Anthropic API key or OAuth is configured."""
     if os.environ.get("ANTHROPIC_API_KEY"):
@@ -132,6 +144,14 @@ def run_preflight_checks(profile) -> List[CheckResult]:
         results.append(check_python_package(pkg))
 
     # provider checks
+    uses_anthropic_oauth = (
+        getattr(profile, "extraction_provider", "") == "anthropic-oauth"
+        or getattr(profile, "trace_provider", "") == "anthropic-oauth"
+        or getattr(profile, "judge_provider", "") == "anthropic-oauth"
+    )
+    if uses_anthropic_oauth:
+        results.append(check_anthropic_oauth())
+
     if profile.extraction_provider == "anthropic" or profile.judge_provider == "anthropic":
         results.append(check_anthropic_key())
 

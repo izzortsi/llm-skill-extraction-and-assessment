@@ -89,6 +89,7 @@ def test_discover_providers_returns_all():
          patch("c1_tools.provider_discovery._probe_ollama") as m2, \
          patch("c1_tools.provider_discovery._probe_iosys") as m2b, \
          patch("c1_tools.provider_discovery._probe_lm_studio") as m2c, \
+         patch("c1_tools.provider_discovery._check_anthropic_oauth") as m2d, \
          patch("c1_tools.provider_discovery._check_anthropic") as m3, \
          patch("c1_tools.provider_discovery._check_openai") as m4, \
          patch("c1_tools.provider_discovery._check_claude_code") as m5:
@@ -96,13 +97,15 @@ def test_discover_providers_returns_all():
         m2.return_value = ProviderStatus("ollama", False, [], "", "down")
         m2b.return_value = ProviderStatus("iosys", False, [], "", "down")
         m2c.return_value = ProviderStatus("lm-studio", False, [], "", "down")
+        m2d.return_value = ProviderStatus("anthropic-oauth", False, [], "", "not installed")
         m3.return_value = ProviderStatus("anthropic", False, [], "", "no key")
         m4.return_value = ProviderStatus("openai", False, [], "", "no key")
         m5.return_value = ProviderStatus("claude-code", False, [], "", "not found")
         results = discover_providers()
 
-    assert len(results) == 7
+    assert len(results) == 8
     names = [r.name for r in results]
+    assert "anthropic-oauth" in names
     assert "lm-studio" in names
     assert "iosys" in names
     assert "lmproxy" in names

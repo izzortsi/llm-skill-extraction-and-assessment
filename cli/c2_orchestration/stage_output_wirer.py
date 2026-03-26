@@ -27,6 +27,8 @@ def _provider_args(provider, model, profile):
         return ["--provider", "openai", "--model", model]
     if provider == "claude-code":
         return ["--provider", "claude-code", "--model", model]
+    if provider == "anthropic-oauth":
+        return ["--provider", "anthropic", "--model", model]
     return ["--provider", provider, "--model", model]
 
 
