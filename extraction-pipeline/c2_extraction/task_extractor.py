@@ -356,6 +356,17 @@ def load_text_chunks_from_dataset(
             if target_chars > 0 and collected_chars >= target_chars:
                 break
 
+    # Eagerly release the streaming dataset and its HTTP connections before
+    # interpreter shutdown. The datasets library's background threads trigger
+    # a fatal PyGILState_Release error if cleaned up during finalization.
+    if use_streaming:
+        del ds
+        if peeked_row is not None:
+            del ds_iter
+        del row_source
+        import gc
+        gc.collect()
+
     full_text = "\n\n".join(raw_parts)
 
     if verbose:
