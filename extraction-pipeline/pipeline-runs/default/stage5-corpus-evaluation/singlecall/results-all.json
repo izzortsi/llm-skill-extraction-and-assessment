@@ -1,0 +1,26 @@
+[
+  {
+    "task_uid": "82ea-9d89-c843-4163",
+    "model": "qwen2.5-3b",
+    "condition": "baseline",
+    "skill_name": "",
+    "mode": "singlecall",
+    "passed": false,
+    "score": 0.0,
+    "tokens": 696,
+    "elapsed_s": 3.07,
+    "judge_rationale": "No match: expected 'incorrect', got 'to address the student's claim, we need to analyze the information provided in the given passage and examine it against historical fact'"
+  },
+  {
+    "task_uid": "82ea-9d89-c843-4163",
+    "model": "qwen2.5-3b",
+    "condition": "curated",
+    "skill_name": "extract-parallel-claims",
+    "mode": "singlecall",
+    "passed": false,
+    "score": 0.0,
+    "tokens": 612,
+    "elapsed_s": 2.14,
+    "judge_rationale": "No match: expected 'incorrect', got 'to evaluate the claim that 'william godwin was the first political philosopher to formally identify himself as an anarchist,' let's examine the given passage and compare it with the assertion'"
+  }
+]

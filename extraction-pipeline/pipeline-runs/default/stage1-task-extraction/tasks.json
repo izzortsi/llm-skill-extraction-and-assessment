@@ -1,0 +1,23 @@
+[
+  {
+    "task_uid": "82ea-9d89-c843-4163",
+    "title": "First Self-Described Anarchist",
+    "domain": "language-skills",
+    "source_artifact": "dataset:wikimedia/wikipedia/20231101.en",
+    "source_document_uid": "b65b-d987-158e-b213",
+    "question": "A student claims: 'William Godwin was the first political philosopher to formally identify himself as an anarchist.' Based on the passage, is this claim correct or incorrect?",
+    "input": "The first political philosopher to call himself an anarchist () was Pierre-Joseph Proudhon (1809–1865), marking the formal birth of anarchism in the mid-19th century. Since the 1890s and beginning in France, libertarianism has often been used as a synonym for anarchism and its use as a synonym is still common outside the United States. Some usages of libertarianism refer to individualistic free-market philosophy only, and free-market anarchism in particular is termed libertarian anarchism.",
+    "output": "incorrect",
+    "difficulty": "intermediate",
+    "query_type": "YES_NO_VERIFICATION",
+    "extraction_method": "opus-4-6-task-extraction-v1",
+    "acceptance_criteria": {
+      "must_identify": [
+        "Pierre-Joseph Proudhon was the first to call himself an anarchist",
+        "William Godwin contributed to anarchist doctrines but did not use the term anarchist to describe himself",
+        "The formal birth of anarchism is marked in the mid-19th century by Proudhon"
+      ],
+      "correct_conclusion": "incorrect"
+    }
+  }
+]

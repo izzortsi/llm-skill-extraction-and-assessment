@@ -1,0 +1,103 @@
+[
+  {
+    "skill_uid": "d7be-47bf-73d7-e2f6",
+    "name": "extract-parallel-claims",
+    "description": "Locates and isolates the specific claim made in a source passage and the corresponding claim made by a student or external party on the same topic.",
+    "procedure": [
+      "The analyst observes the source passage to locate the specific factual claim relevant to the topic in question.",
+      "The analyst observes the student's or external party's statement to locate their corresponding claim on the same topic."
+    ],
+    "when_to_use": "When a student's or external claim needs to be checked against a source passage and the relevant statements must first be isolated before any comparison can occur.",
+    "constraints": [
+      "Both claims must address the same topic or entity for extraction to be meaningful.",
+      "The source passage must contain an explicit statement on the topic, not merely an implication."
+    ],
+    "source_task_uids": [
+      "82ea-9d89-c843-4163"
+    ],
+    "extraction_method": "opus-4-6-skill-extraction-v1",
+    "is_valid": false,
+    "defect_count": 2,
+    "defects": [
+      {
+        "defect_type": "imprecise_external_reference",
+        "location": "when_to_use",
+        "description": "Imprecise reference \"the relevant\" without enough info to locate",
+        "suggestion": "Replace \"the relevant\" with exact name, path, or section reference"
+      },
+      {
+        "defect_type": "vaguely_specified_operation",
+        "location": "constraint 1",
+        "description": "Vague operation \"address\" lacks depth or acceptance criteria",
+        "suggestion": "Replace \"address\" with a specific action and expected outcome"
+      }
+    ]
+  },
+  {
+    "skill_uid": "740d-3be6-71ad-f0dd",
+    "name": "identify-factual-contradiction",
+    "description": "Determines whether two extracted claims on the same topic contradict each other by distinguishing the key differing elements and comparing them.",
+    "procedure": [
+      "The analyst distinguishes the specific factual element in the student's claim from the corresponding factual element in the source passage (e.g., a name, date, or category).",
+      "The analyst compares the two factual elements to determine whether they are consistent or contradictory."
+    ],
+    "when_to_use": "When two parallel claims on the same topic have been extracted and the analyst needs to determine whether they agree or conflict.",
+    "constraints": [
+      "The comparison must be between claims on the same attribute or relationship.",
+      "A contradiction requires that the two claims cannot both be true simultaneously."
+    ],
+    "source_task_uids": [
+      "82ea-9d89-c843-4163"
+    ],
+    "extraction_method": "opus-4-6-skill-extraction-v1",
+    "is_valid": false,
+    "defect_count": 2,
+    "defects": [
+      {
+        "defect_type": "procedural_sufficiency",
+        "location": "procedure",
+        "description": "Procedure has no observation step -- actions should begin with observing the input",
+        "suggestion": "Add an initial step that observes/reads/scans the input"
+      },
+      {
+        "defect_type": "passive_voice",
+        "location": "when_to_use",
+        "description": "Passive voice: \"been extracted\" hides the actor",
+        "suggestion": "Rewrite \"been extracted\" to name the actor explicitly"
+      }
+    ]
+  },
+  {
+    "skill_uid": "db9a-92fd-1fef-c110",
+    "name": "render-contradiction-verdict",
+    "description": "Produces a final correctness judgment by applying the identified contradiction (or consistency) to evaluate the external claim against the authoritative source.",
+    "procedure": [
+      "The analyst applies the result of the factual comparison to render a verdict on whether the student's or external claim is correct or incorrect according to the source passage."
+    ],
+    "when_to_use": "When a factual comparison between a source claim and an external claim has been completed and a final judgment must be stated.",
+    "constraints": [
+      "The verdict must be grounded solely in the source passage, not external knowledge.",
+      "The verdict must explicitly state what the correct information is according to the source."
+    ],
+    "source_task_uids": [
+      "82ea-9d89-c843-4163"
+    ],
+    "extraction_method": "opus-4-6-skill-extraction-v1",
+    "is_valid": false,
+    "defect_count": 2,
+    "defects": [
+      {
+        "defect_type": "procedural_sufficiency",
+        "location": "procedure",
+        "description": "Procedure has no observation step -- actions should begin with observing the input",
+        "suggestion": "Add an initial step that observes/reads/scans the input"
+      },
+      {
+        "defect_type": "passive_voice",
+        "location": "when_to_use",
+        "description": "Passive voice: \"been completed\" hides the actor",
+        "suggestion": "Rewrite \"been completed\" to name the actor explicitly"
+      }
+    ]
+  }
+]

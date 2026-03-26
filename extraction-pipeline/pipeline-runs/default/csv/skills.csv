@@ -1,0 +1,4 @@
+skill_uid,name,description,procedure_steps,instance_count
+d7be-47bf-73d7-e2f6,extract-parallel-claims,Locates and isolates the specific claim made in a source passage and the corresponding claim made by a student or external party on the same topic.,2,1
+740d-3be6-71ad-f0dd,identify-factual-contradiction,Determines whether two extracted claims on the same topic contradict each other by distinguishing the key differing elements and comparing them.,2,1
+db9a-92fd-1fef-c110,render-contradiction-verdict,Produces a final correctness judgment by applying the identified contradiction (or consistency) to evaluate the external claim against the authoritative source.,1,1

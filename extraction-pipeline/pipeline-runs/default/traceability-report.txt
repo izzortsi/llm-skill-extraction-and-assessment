@@ -1,0 +1,41 @@
+================================================================================
+TRACEABILITY REPORT
+================================================================================
+
+Generated: 2026-03-25 14:03 UTC
+Tasks file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage1-task-extraction/tasks.json
+Skills file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage4-skill-verification/verified_skills.json
+Passages file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage1-task-extraction/passages.json
+
+--------------------------------------------------------------------------------
+SUMMARY
+--------------------------------------------------------------------------------
+
+Source documents:      1
+Passages:              1
+Tasks:                 1
+Skills:                3
+Traceability records:  3
+Orphaned tasks:        0 of 1 (no source_document_uid)
+Orphaned skills:       0 of 3 (no source_task_uids)
+Unlinked tasks:        0 of 1 (not referenced by any skill)
+
+--------------------------------------------------------------------------------
+SOURCE DOCUMENTS
+--------------------------------------------------------------------------------
+
+  b65b-d987-158e-b213  dataset:wikimedia/wikipedia/20231101.en  (1 tasks)
+
+--------------------------------------------------------------------------------
+TRACEABILITY CHAIN
+--------------------------------------------------------------------------------
+
+  Document UID           Task UID               Skill UID              Skill Name
+  --------------------   --------------------   --------------------   --------------------
+  b65b-d987-158e-b213    82ea-9d89-c843-4163    d7be-47bf-73d7-e2f6    extract-parallel-claims
+  b65b-d987-158e-b213    82ea-9d89-c843-4163    740d-3be6-71ad-f0dd    identify-factual-contradiction
+  b65b-d987-158e-b213    82ea-9d89-c843-4163    db9a-92fd-1fef-c110    render-contradiction-verdict
+
+================================================================================
+END OF REPORT
+================================================================================
