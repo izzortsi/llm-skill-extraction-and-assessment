@@ -110,10 +110,13 @@ def check_anthropic_oauth() -> CheckResult:
         from anthropic_oauth import OAuthManager
     except ImportError:
         return CheckResult("anthropic-oauth", False, "anthropic-oauth not installed")
-    manager = OAuthManager()
-    if manager.has_valid_tokens():
-        return CheckResult("anthropic-oauth", True, "OAuth tokens valid")
-    return CheckResult("anthropic-oauth", False, "no valid OAuth tokens (run: anthropic-oauth)")
+    try:
+        manager = OAuthManager()
+        if manager.has_valid_tokens():
+            return CheckResult("anthropic-oauth", True, "OAuth tokens valid")
+        return CheckResult("anthropic-oauth", False, "no valid OAuth tokens (run: anthropic-oauth)")
+    except Exception as exc:
+        return CheckResult("anthropic-oauth", False, f"error checking OAuth tokens: {exc}")
 
 
 def check_anthropic_key() -> CheckResult:
@@ -165,6 +168,11 @@ def run_preflight_checks(profile) -> List[CheckResult]:
         getattr(profile, "extraction_provider", "") == "anthropic-oauth"
         or getattr(profile, "trace_provider", "") == "anthropic-oauth"
         or getattr(profile, "judge_provider", "") == "anthropic-oauth"
+        or any(
+            entry.get("provider") == "anthropic-oauth"
+            for entry in getattr(profile, "eval_models", [])
+            if isinstance(entry, dict)
+        )
     )
     if uses_anthropic_oauth:
         results.append(check_anthropic_oauth())

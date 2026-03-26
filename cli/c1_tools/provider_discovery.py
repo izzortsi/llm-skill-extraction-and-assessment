@@ -164,13 +164,16 @@ def _check_anthropic_oauth() -> ProviderStatus:
     except ImportError:
         status.message = "anthropic-oauth not installed"
         return status
-    manager = OAuthManager()
-    if manager.has_valid_tokens():
-        status.reachable = True
-        status.models = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
-        status.message = "OAuth tokens valid"
-    else:
-        status.message = "no valid OAuth tokens (run: anthropic-oauth)"
+    try:
+        manager = OAuthManager()
+        if manager.has_valid_tokens():
+            status.reachable = True
+            status.models = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
+            status.message = "OAuth tokens valid"
+        else:
+            status.message = "no valid OAuth tokens (run: anthropic-oauth)"
+    except Exception as exc:
+        status.message = f"anthropic-oauth error: {exc}"
     return status
 
 

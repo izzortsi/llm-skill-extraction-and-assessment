@@ -55,7 +55,7 @@ def _build_model_entry(entry, profile):
     if provider == "anthropic":
         model_entry["api_key_env"] = "ANTHROPIC_API_KEY"
     elif provider == "anthropic-oauth":
-        pass  # OAuth handles auth internally, no api_key_env needed
+        model_entry["provider"] = "anthropic-oauth"
     elif provider == "ollama":
         model_entry["api_base"] = profile.ollama_url
     elif provider == "iosys":
