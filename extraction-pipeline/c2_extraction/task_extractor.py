@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -301,13 +302,26 @@ def load_text_chunks_from_dataset(
     if subset:
         load_kwargs["name"] = subset
 
+    # Stream when max_chunks is set to avoid downloading the full dataset.
+    # Wikipedia 20231101.en is 18.8 GB; streaming fetches only the rows we need.
+    use_streaming = max_chunks > 0
+    if use_streaming:
+        load_kwargs["streaming"] = True
+
     ds = load_dataset(**load_kwargs)
 
     # Auto-detect text column
     resolved_column = text_column
+    peeked_row = None
     if not resolved_column:
-        resolved_column = _detect_text_column(ds)
-    if resolved_column not in ds.column_names:
+        if use_streaming:
+            # IterableDataset: peek at first row to detect column
+            ds_iter = iter(ds)
+            peeked_row = next(ds_iter)
+            resolved_column = _detect_text_column_from_row(peeked_row)
+        else:
+            resolved_column = _detect_text_column(ds)
+    if not use_streaming and resolved_column not in ds.column_names:
         raise ValueError(
             f"Column '{resolved_column}' not found in dataset. "
             f"Available columns: {ds.column_names}. "
@@ -315,7 +329,8 @@ def load_text_chunks_from_dataset(
         )
 
     if verbose:
-        print(f"  Using column: '{resolved_column}' ({len(ds)} rows)")
+        row_count = f"{len(ds)} rows" if hasattr(ds, "__len__") else "streaming"
+        print(f"  Using column: '{resolved_column}' ({row_count})")
 
     # Concatenate text entries with paragraph breaks.
     # When max_chunks is set, stop reading rows once enough text is collected
@@ -324,7 +339,15 @@ def load_text_chunks_from_dataset(
     target_chars = chunk_size * max_chunks * 3 if max_chunks > 0 else 0
     raw_parts = []
     collected_chars = 0
-    for row in ds:
+
+    # In streaming mode with auto-detect, we already consumed the first row
+    # via peek. Process it before iterating the rest.
+    if use_streaming and peeked_row is not None:
+        row_source = itertools.chain([peeked_row], ds_iter)
+    else:
+        row_source = ds
+
+    for row in row_source:
         text_value = row[resolved_column]
         if isinstance(text_value, str) and text_value.strip():
             part = text_value.strip()
@@ -348,6 +371,32 @@ def load_text_chunks_from_dataset(
         print(f"  Produced {len(chunks)} chunks (target size: {chunk_size} chars)")
 
     return chunks
+
+
+def _detect_text_column_from_row(row: dict) -> str:
+    """Auto-detect text column from a single dataset row (streaming mode).
+
+    Args:
+        row: Dict from one dataset row.
+
+    Returns:
+        Column name string.
+
+    Raises:
+        ValueError: If no text column can be detected.
+    """
+    priority_names = ["text", "content", "passage", "article", "sentence",
+                      "document", "paragraph", "body"]
+    for name in priority_names:
+        if name in row:
+            return name
+    for col_name, value in row.items():
+        if isinstance(value, str):
+            return col_name
+    raise ValueError(
+        f"Cannot auto-detect text column. Columns: {list(row.keys())}. "
+        f"Use --text-column to specify."
+    )
 
 
 def _detect_text_column(ds) -> str:
