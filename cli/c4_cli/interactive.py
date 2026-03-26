@@ -472,6 +472,7 @@ def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
         ("ollama", "ollama_url"),
         ("iosys", "iosys_base_url"),
         ("lm-studio", "lm_studio_url"),
+        ("zai", "zai_url"),
     ]
     changed = False
     for provider_name, profile_field in url_checks:
@@ -493,6 +494,7 @@ def _reprobe_if_changed(providers: list, profile: PipelineProfile) -> list:
         ollama_url=profile.ollama_url,
         iosys_url=profile.iosys_base_url,
         lm_studio_url=profile.lm_studio_url,
+        zai_url=profile.zai_url,
         config_file=str(cfg_path) if cfg_path.exists() else "",
     )
     _display_discovery_summary(new_providers)
@@ -534,6 +536,7 @@ def build_profile_interactive(provider_statuses: list) -> PipelineProfile:
     profile.ollama_url = _text_input("Ollama URL", profile.ollama_url)
     profile.iosys_base_url = _text_input("iosys URL", profile.iosys_base_url)
     profile.lm_studio_url = _text_input("LM Studio URL", profile.lm_studio_url)
+    profile.zai_url = _text_input("Z.AI URL", profile.zai_url)
 
     # Re-probe if URLs changed
     provider_statuses = _reprobe_if_changed(provider_statuses, profile)
