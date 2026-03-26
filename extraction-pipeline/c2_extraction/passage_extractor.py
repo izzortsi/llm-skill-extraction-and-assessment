@@ -254,6 +254,14 @@ Examples:
     if args.verbose:
         print(f"Saved {len(passages)} passages to {args.output}")
 
+    # The datasets library's streaming mode leaves background threads
+    # (aiohttp, pyarrow) that crash during Python's finalization with
+    # "PyGILState_Release: thread state must be current". The output
+    # is already saved, so skip finalization entirely.
+    if args.dataset and args.max_chunks > 0:
+        import os
+        os._exit(0)
+
 
 if __name__ == "__main__":
     main()
