@@ -30,7 +30,7 @@ def _resolve_litellm_model(entry):
     if provider == "claude-code":
         return model  # pass through the actual model name (e.g. claude-sonnet-4-6)
 
-    if provider == "anthropic":
+    if provider in ("anthropic", "anthropic-oauth"):
         return model
 
     if provider == "openai":
@@ -54,6 +54,8 @@ def _build_model_entry(entry, profile):
 
     if provider == "anthropic":
         model_entry["api_key_env"] = "ANTHROPIC_API_KEY"
+    elif provider == "anthropic-oauth":
+        model_entry["provider"] = "anthropic-oauth"
     elif provider == "ollama":
         model_entry["api_base"] = profile.ollama_url
     elif provider == "iosys":

@@ -227,7 +227,7 @@ compose_k_values:
   - 3
 ```
 
-valid provider values: `lmproxy`, `ollama`, `anthropic`, `openai`, `claude-code`.
+valid provider values: `lmproxy`, `ollama`, `anthropic`, `anthropic-oauth`, `openai`, `claude-code`.
 
 the `--minimal` flag overrides any profile with: 1 chunk, 2 tasks/chunk, 2 skills,
 k=2 compositions only, singlecall mode, 2 models.
@@ -254,8 +254,8 @@ llm-skills.cli/
         profile_loader.py       YAML load/save for profiles
         stage_runner.py         subprocess execution of individual stages
         output_inspector.py     run directory inspection and crash recovery
-        provider_checker.py     pre-flight provider connectivity checks (lmproxy, ollama, anthropic)
-        provider_discovery.py   runtime provider/model discovery (probes lmproxy, ollama, checks API keys)
+        provider_checker.py     pre-flight provider connectivity checks (lmproxy, ollama, anthropic, zai, iosys, lm-studio, anthropic-oauth)
+        provider_discovery.py   runtime provider/model discovery (probes all providers, checks API keys and OAuth tokens)
         claude_code_provider.py ClaudeCodeProvider adapter (claude -p subprocess wrapper)
     c2_orchestration/
         pipeline_executor.py    multi-stage orchestration with dependency resolution + lmproxy session
@@ -276,19 +276,27 @@ llm-skills.cli/
 
 ## providers
 
-the CLI supports 5 LLM provider types:
+the CLI supports 7 LLM provider types:
 
 | provider | what it is | requires |
 |----------|-----------|----------|
 | `lmproxy` | centralized API gateway (default) | lmproxy running at `lmproxy_base_url` |
 | `ollama` | local model server | Ollama running at `ollama_url` |
 | `anthropic` | direct Anthropic API | `ANTHROPIC_API_KEY` env var |
+| `anthropic-oauth` | Anthropic via Claude Pro/Max subscription (no API cost) | `anthropic-oauth` package + valid OAuth tokens |
 | `openai` | direct OpenAI API | `OPENAI_API_KEY` env var |
 | `claude-code` | Claude Code CLI subprocess | `claude` on PATH |
+| `iosys` | iosys LLM inference API | iosys server at `iosys_base_url`, optional `IOSYS_API_KEY` |
+| `lm-studio` | LM Studio local server | LM Studio running at `lm_studio_url` |
+| `zai` | Z.AI (Zhipu) API | `ZHIPU_API_KEY` env var |
 
 the interactive setup (`config create --interactive`) probes all providers at startup
 and shows which are reachable. `--claude-code` is a convenience flag that sets all
 roles to use Claude Code with no additional configuration.
+
+to use `anthropic-oauth`, install the package (`pip install anthropic-oauth[anthropic]`)
+and run `anthropic-oauth` once to authenticate via browser. after that, select
+`anthropic-oauth` as provider in the interactive config -- no API key needed.
 
 ## dependencies
 

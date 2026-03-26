@@ -156,6 +156,27 @@ def _probe_iosys(iosys_url: str) -> ProviderStatus:
     return status
 
 
+def _check_anthropic_oauth() -> ProviderStatus:
+    """Check if anthropic-oauth package is installed with valid tokens."""
+    status = ProviderStatus(name="anthropic-oauth", reachable=False, base_url="https://api.anthropic.com")
+    try:
+        from anthropic_oauth import OAuthManager
+    except ImportError:
+        status.message = "anthropic-oauth not installed"
+        return status
+    try:
+        manager = OAuthManager()
+        if manager.has_valid_tokens():
+            status.reachable = True
+            status.models = ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
+            status.message = "OAuth tokens valid"
+        else:
+            status.message = "no valid OAuth tokens (run: anthropic-oauth)"
+    except Exception as exc:
+        status.message = f"anthropic-oauth error: {exc}"
+    return status
+
+
 def _check_anthropic() -> ProviderStatus:
     """Check Anthropic API key availability (no network call)."""
     status = ProviderStatus(name="anthropic", reachable=False, base_url="https://api.anthropic.com")
@@ -249,8 +270,9 @@ def discover_providers(
     iosys_status = _probe_iosys(iosys_url)
     lm_studio_status = _probe_lm_studio(lm_studio_url)
     zai_status = _probe_zai(zai_url)
+    anthropic_oauth_status = _check_anthropic_oauth()
     anthropic_status = _check_anthropic()
     openai_status = _check_openai()
     claude_status = _check_claude_code()
 
-    return [lmproxy_status, ollama_status, iosys_status, lm_studio_status, zai_status, anthropic_status, openai_status, claude_status]
+    return [lmproxy_status, ollama_status, iosys_status, lm_studio_status, zai_status, anthropic_oauth_status, anthropic_status, openai_status, claude_status]
