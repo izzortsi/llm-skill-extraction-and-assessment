@@ -11,7 +11,7 @@ Swap providers by changing one constructor call. The harness never
 knows which backend is active.
 
 This module is the canonical source for the rich provider hierarchy
-used by llm-skills.training-pipeline and related packages.
+used by training-pipeline and related packages.
 """
 
 from __future__ import annotations

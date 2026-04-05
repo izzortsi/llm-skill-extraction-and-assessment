@@ -76,8 +76,8 @@ cd "$REPO_ROOT"
 # NOTE: extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
 BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
-PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
-PYTHONPATH_SKILL="${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
+PYTHONPATH_TEXT="${REPO_ROOT}/text-extraction-pipeline:${BASE_PYTHONPATH}"
+PYTHONPATH_SKILL="${REPO_ROOT}/task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
 export PYTHONPATH="${PYTHONPATH_SKILL}"
 
 log "Repo root: ${REPO_ROOT}"

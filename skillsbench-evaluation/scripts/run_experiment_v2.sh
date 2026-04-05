@@ -98,9 +98,9 @@ cd "$REPO_ROOT"
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
 BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/skillmix-evaluation:${REPO_ROOT}/shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
 # Phase 1 (task extraction) needs text-extraction-pipeline
-PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
+PYTHONPATH_TEXT="${REPO_ROOT}/text-extraction-pipeline:${BASE_PYTHONPATH}"
 # Phases 2-4 (traces, skills, verification) need task-skill-extraction-pipeline
-PYTHONPATH_SKILL="${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
+PYTHONPATH_SKILL="${REPO_ROOT}/task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
 # Phases 5+ (evaluation) need skillsbench (already in BASE)
 export PYTHONPATH="${PYTHONPATH_SKILL}"
 

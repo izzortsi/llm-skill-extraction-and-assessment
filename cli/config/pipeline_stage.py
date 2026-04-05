@@ -15,7 +15,7 @@ class PipelineStage:
     stage_id: str              # "1a", "1b", "2", "3", "4", "5", "6", "7"
     name: str                  # "extract-passages", "capture-traces", etc.
     description: str           # human-readable one-liner
-    pipeline_dir: str          # "llm-skills.text-extraction-pipeline"
+    pipeline_dir: str          # "text-extraction-pipeline"
     commands: List[str] = field(default_factory=list)  # ["extract-passages"] or ["traceability-report", "export-csv"]
     output_dir: str = ""       # "stage1-task-extraction" (relative to run_dir)
     output_files: List[str] = field(default_factory=list)  # ["passages.json"]
