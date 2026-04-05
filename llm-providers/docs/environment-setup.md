@@ -106,7 +106,7 @@ The `api_key_env` field is resolved at runtime via `os.environ.get()`.
 
 ### Option 1: `.env` file (recommended for local development)
 
-Create a `.env` file in the `llm-skills.llm-providers/` directory:
+Create a `.env` file in the `llm-providers/` directory:
 
 ```bash
 ZHIPU_API_KEY="your-zhipu-key"
@@ -144,7 +144,7 @@ Or via Settings > System > Advanced > Environment Variables.
 ## Running Tests
 
 ```bash
-cd llm-skills.llm-providers
+cd llm-providers
 
 # run all pipeline provider tests
 pytest tests/test_pipeline_providers.py -v

@@ -1,4 +1,4 @@
-# llm-skills.skillmix-evaluation
+# skillmix-evaluation
 
 SkillMix composition quality evaluation. measures whether composed skills (multi-skill
 combinations) improve LLM performance compared to baseline (no skill). stage 8 of the
@@ -14,7 +14,7 @@ charts broken down by composition size (k) and operator type (seq/par/cond).
 
 ## judging
 
-the LLM judge (LLMJudgeEvaluator from llm-skills.skillsbench-evaluation) evaluates each
+the LLM judge (LLMJudgeEvaluator from skillsbench-evaluation) evaluates each
 model response by comparing the response text against the task's passage, challenge, and
 acceptance_criteria. the judge model is configured via models.yaml (defaults to
 claude-opus-4-6). when --config is provided, the judge is resolved from the config's
@@ -23,7 +23,7 @@ claude-opus-4-6). when --config is provided, the judge is resolved from the conf
 ## commands
 
 ```bash
-cd llm-skills.skillmix-evaluation
+cd skillmix-evaluation
 python -m c4_cli.main run-skillmix --help  # run SkillMix experiment (stage 8)
 python -m c4_cli.main report       --help  # generate summary report (stage 8)
 python -m c4_cli.main visualize    --help  # generate charts (stage 9)
@@ -34,10 +34,10 @@ python -m c4_cli.main visualize    --help  # generate charts (stage 9)
 ```bash
 # run evaluation with config-driven model routing
 python -m c4_cli.main run-skillmix \
-    --tasks ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
-    --skills-dir ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage4b-skill-composition \
+    --tasks ../extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
+    --skills-dir ../extraction-pipeline/data/pipeline-runs/default-profile/stage4b-skill-composition \
     --models qwen2.5-3b,qwen2.5-7b \
-    --config ../llm-skills.llm-providers/configs/models.yaml \
+    --config ../llm-providers/configs/models.yaml \
     --output-dir results/ -v
 
 # generate text report
@@ -82,6 +82,6 @@ c4_cli/            main.py, run_skillmix.py, report.py, visualize.py
 
 ## dependencies
 
-- llm-skills.llm-providers (LLM provider abstraction, model config, judge config)
-- llm-skills.skillsbench-evaluation (shared evaluation types: LLMJudgeEvaluator, skill_injection)
+- llm-providers (LLM provider abstraction, model config, judge config)
+- skillsbench-evaluation (shared evaluation types: LLMJudgeEvaluator, skill_injection)
 - matplotlib (chart generation)

@@ -1,4 +1,4 @@
-# llm-skills.skillsbench-evaluation
+# skillsbench-evaluation
 
 corpus-based evaluation measuring whether skill injection improves LLM task performance.
 stages 5-6 of the llm-skills pipeline.
@@ -24,7 +24,7 @@ the assessment.
 ## commands
 
 ```bash
-cd llm-skills.skillsbench-evaluation
+cd skillsbench-evaluation
 python -m c4_cli.main run-skillsbench --help  # run corpus evaluation (stage 5)
 python -m c4_cli.main heatmaps       --help  # generate visualizations (stage 6)
 ```
@@ -34,9 +34,9 @@ python -m c4_cli.main heatmaps       --help  # generate visualizations (stage 6)
 ```bash
 # evaluate with config-driven model routing
 python -m c4_cli.main run-skillsbench \
-    --tasks ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
-    --skills ../llm-skills.extraction-pipeline/data/pipeline-runs/default-profile/stage4-skill-verification/verified_skills.json \
-    --config ../llm-skills.llm-providers/configs/models.yaml \
+    --tasks ../extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
+    --skills ../extraction-pipeline/data/pipeline-runs/default-profile/stage4-skill-verification/verified_skills.json \
+    --config ../llm-providers/configs/models.yaml \
     --mode singlecall \
     --output results.json -v
 
@@ -59,5 +59,5 @@ tests/             test_litellm_provider, test_model_config
 
 ## dependencies
 
-- llm-skills.llm-providers (LLM provider abstraction, model config, judge config)
-- llm-skills.extraction-pipeline (ExtractedTask, ExtractedSkill types via c1_types/)
+- llm-providers (LLM provider abstraction, model config, judge config)
+- extraction-pipeline (ExtractedTask, ExtractedSkill types via c1_types/)

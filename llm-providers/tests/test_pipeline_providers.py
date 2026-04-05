@@ -30,7 +30,7 @@ def _require_env(var_name: str) -> str:
     if not value:
         raise ValueError(
             f"{var_name} is required but not set. "
-            f"Add it to llm-skills.llm-providers/.env or export it."
+            f"Add it to llm-providers/.env or export it."
         )
     return value
 

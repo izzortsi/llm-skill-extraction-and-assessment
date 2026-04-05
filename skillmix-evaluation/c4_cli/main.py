@@ -1,7 +1,7 @@
 """
 main.py
 
-CLI entry point for llm-skills.skillmix-evaluation.
+CLI entry point for skillmix-evaluation.
 
 Usage:
     python -m c4_cli.main <command> [options]
@@ -31,7 +31,7 @@ _bootstrap.setup_skillsbench_evaluation()
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="llm-skills.skillmix-evaluation: SkillMix benchmarking CLI",
+        description="skillmix-evaluation: SkillMix benchmarking CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

@@ -14,7 +14,7 @@
 #
 # Usage:
 #   cd kcg-ml-llm
-#   bash llm-skills.skillsbench-evaluation/scripts/run_experiment_v2.sh
+#   bash skillsbench-evaluation/scripts/run_experiment_v2.sh
 
 set -euo pipefail
 
@@ -96,7 +96,7 @@ cd "$REPO_ROOT"
 # Add module paths to PYTHONPATH
 # NOTE: c2_extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
-BASE_PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${REPO_ROOT}/llm-skills.skillmix-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-skills.llm-providers:${PYTHONPATH:-}"
+BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/skillmix-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
 # Phase 1 (task extraction) needs text-extraction-pipeline
 PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
 # Phases 2-4 (traces, skills, verification) need task-skill-extraction-pipeline

@@ -1,4 +1,4 @@
-"""llm-skills.llm-providers -- shared LLM provider abstraction layer.
+"""llm-providers -- shared LLM provider abstraction layer.
 
 public API re-exports. imports are deferred to avoid hard failures
 when optional dependencies (pyyaml, etc.) are not installed.

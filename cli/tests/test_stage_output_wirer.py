@@ -14,7 +14,7 @@ def test_stage5_eval_models_join(tmp_path):
         {"provider": "ollama", "model": "llama3.2:1b"},
     ]
     # Stage 5 checks config_file existence — create a dummy
-    config_dir = tmp_path / "llm-skills.llm-providers" / "configs"
+    config_dir = tmp_path / "llm-providers" / "configs"
     config_dir.mkdir(parents=True)
     (config_dir / "models.yaml").write_text("models: {}\njudge:\n  model: x\n")
     profile.config_file = str(config_dir / "models.yaml")

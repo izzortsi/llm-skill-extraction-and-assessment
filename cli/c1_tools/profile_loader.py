@@ -2,7 +2,7 @@
 profile_loader.py
 
 Load and save PipelineProfile instances as YAML files.
-Profiles are stored in llm-skills.cli/profiles/.
+Profiles are stored in cli/profiles/.
 """
 
 from pathlib import Path
@@ -64,7 +64,7 @@ def save_profile(profile: PipelineProfile) -> Path:
     # auto-set run_dir based on profile name when using default
     default_run_dir = PipelineProfile().run_dir
     if profile.run_dir == default_run_dir and profile.profile_name != "default":
-        profile.run_dir = f"llm-skills.extraction-pipeline/data/pipeline-runs/{profile.profile_name}-profile"
+        profile.run_dir = f"extraction-pipeline/data/pipeline-runs/{profile.profile_name}-profile"
 
     data = {}
     for key, value in profile.__dict__.items():

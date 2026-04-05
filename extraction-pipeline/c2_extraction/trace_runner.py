@@ -189,7 +189,7 @@ def run_task_for_trace(
     raw_steps = _extract_raw_steps(clean_response)
 
     model_name = getattr(provider, "model_name", getattr(provider, "model", "unknown"))
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     import re as _re
     short_model = _re.sub(r"^claude-", "", model_name)
     short_model = _re.sub(r"[:/]", "-", short_model)
@@ -249,8 +249,8 @@ def main() -> None:
     if not args.tasks.exists():
         raise FileNotFoundError(f"Tasks file not found: {args.tasks}")
 
-    # TODO: import from llm-skills.llm-providers
-    from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+    # TODO: import from llm-providers
+    from c1_providers.providers import create_provider  # noqa: requires llm-providers on sys.path
     provider = create_provider(args.provider, args.model)
 
     tasks = load_extracted_tasks(args.tasks)

@@ -1,4 +1,4 @@
-# llm-skills.cli
+# cli
 
 unified CLI for the llm-skills pipeline suite. orchestrates all 11 pipeline stages
 (1a, 1b, 2-8) across 5 separate pipeline projects via subprocess isolation, with
@@ -7,7 +7,7 @@ Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 ## quickstart
 
 ```bash
-cd llm-skills.cli
+cd cli
 
 # zero-setup run using Claude Code CLI (no API keys or servers needed)
 python3 -m c4_cli.main run --stages all --minimal --claude-code --clean
@@ -148,17 +148,17 @@ skillmix      stages 8-9 (skillmix eval + report + visualization)
 ```
 stage  name                pipeline project                      commands
 -----  ------------------  ------------------------------------  ----------------------------
-1a     extract-passages    llm-skills.extraction-pipeline        extract-passages
-1b     extract-tasks       llm-skills.extraction-pipeline        extract-tasks
-2      capture-traces      llm-skills.extraction-pipeline        capture-traces
-3      extract-skills      llm-skills.extraction-pipeline        extract-skills
-4      verify-skills       llm-skills.extraction-pipeline        verify-skills --revise
-4b     compose-skills      llm-skills.extraction-pipeline        compose-skills
-5      corpus-evaluation   llm-skills.skillsbench-evaluation     run-skillsbench
-6      visualization       llm-skills.skillsbench-evaluation     heatmaps
-7      traceability        llm-skills.extraction-pipeline        traceability-report, export-csv
-8      skillmix-evaluation  llm-skills.skillmix-evaluation        run-skillmix, report
-9      skillmix-viz         llm-skills.skillmix-evaluation        visualize
+1a     extract-passages    extraction-pipeline        extract-passages
+1b     extract-tasks       extraction-pipeline        extract-tasks
+2      capture-traces      extraction-pipeline        capture-traces
+3      extract-skills      extraction-pipeline        extract-skills
+4      verify-skills       extraction-pipeline        verify-skills --revise
+4b     compose-skills      extraction-pipeline        compose-skills
+5      corpus-evaluation   skillsbench-evaluation     run-skillsbench
+6      visualization       skillsbench-evaluation     heatmaps
+7      traceability        extraction-pipeline        traceability-report, export-csv
+8      skillmix-evaluation  skillmix-evaluation        run-skillmix, report
+9      skillmix-viz         skillmix-evaluation        visualize
 ```
 
 ### LLM usage by stage
@@ -179,12 +179,12 @@ package names (c0_utils, c1_tools, c2_extraction).
 
 ## profiles
 
-profiles are YAML files in `llm-skills.cli/profiles/`. each profile stores all
+profiles are YAML files in `cli/profiles/`. each profile stores all
 configuration needed for a pipeline run:
 
 ```yaml
 profile_name: my-experiment
-run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/my-experiment-profile
+run_dir: extraction-pipeline/data/pipeline-runs/my-experiment-profile
 lmproxy_base_url: "http://localhost:8080/v1"
 
 # source data (stage 1a)
@@ -245,7 +245,7 @@ the first incomplete stage. use `--clean` to force a full re-run.
 ## structure
 
 ```
-llm-skills.cli/
+cli/
     c0_config/
         pipeline_stage.py       stage metadata (id, name, pipeline_dir, commands, dependencies)
         pipeline_profile.py     experiment profile dataclass + minimal overrides
@@ -306,6 +306,6 @@ and run `anthropic-oauth` once to authenticate via browser. after that, select
 - pyyaml (for profile loading)
 - requests (for provider discovery probes)
 
-the pipeline projects (llm-skills.extraction-pipeline, llm-skills.skillsbench-evaluation,
-llm-skills.skillmix-evaluation) have their own dependencies (anthropic, openai, datasets,
+the pipeline projects (extraction-pipeline, skillsbench-evaluation,
+skillmix-evaluation) have their own dependencies (anthropic, openai, datasets,
 matplotlib). run `setup` to check.

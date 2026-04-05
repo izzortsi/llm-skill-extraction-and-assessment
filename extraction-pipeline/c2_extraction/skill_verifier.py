@@ -777,8 +777,8 @@ def main() -> None:
         print(f"Loaded {len(skills)} skills from {args.skills}")
 
     if args.revise:
-        # TODO: import from llm-skills.llm-providers
-        from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+        # TODO: import from llm-providers
+        from c1_providers.providers import create_provider  # noqa: requires llm-providers on sys.path
         provider = create_provider(args.provider, args.model)
 
         revised_skills, results = verify_and_revise(

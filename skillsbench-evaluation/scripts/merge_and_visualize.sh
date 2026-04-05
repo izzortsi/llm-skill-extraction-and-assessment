@@ -7,7 +7,7 @@
 #
 # Usage:
 #   cd kcg-ml-llm
-#   bash llm-skills.skillsbench-evaluation/scripts/merge_and_visualize.sh
+#   bash skillsbench-evaluation/scripts/merge_and_visualize.sh
 
 set -euo pipefail
 
@@ -40,7 +40,7 @@ die() { log "FATAL: $*" >&2; exit 1; }
 cd "$REPO_ROOT"
 
 # Add module paths to PYTHONPATH
-export PYTHONPATH="${REPO_ROOT}/llm-skills.skillsbench-evaluation:${PYTHONPATH:-}"
+export PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${PYTHONPATH:-}"
 
 log "Repo root: ${REPO_ROOT}"
 log "Data directory:  ${DATA_DIR}"

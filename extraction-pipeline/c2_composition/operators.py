@@ -555,8 +555,8 @@ class SemanticCompositor:
     def _get_provider(self):
         """Lazily create the LLM provider."""
         if self._provider is None:
-            # TODO: import from llm-skills.llm-providers
-            from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+            # TODO: import from llm-providers
+            from c1_providers.providers import create_provider  # noqa: requires llm-providers on sys.path
             self._provider = create_provider(self.config.provider, self.config.model)
         return self._provider
 

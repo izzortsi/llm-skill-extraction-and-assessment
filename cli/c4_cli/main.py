@@ -4,7 +4,7 @@ main.py
 Unified CLI entry point for the llm-skills pipeline suite.
 
 Usage:
-    cd llm-skills.cli
+    cd cli
     python -m c4_cli.main <command> [options]
 
 Commands:

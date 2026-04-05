@@ -639,7 +639,7 @@ def extract_tasks_from_artifact(
 
     document_uid = _generate_document_uid(source_artifact)
     model_name = getattr(provider, "model_name", getattr(provider, "model", "unknown"))
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     import re as _re
     short_model = _re.sub(r"^claude-", "", model_name)
     short_model = _re.sub(r"[:/]", "-", short_model)
@@ -716,13 +716,13 @@ def load_extracted_tasks(filepath: Path) -> List[ExtractedTask]:
     Returns:
         List of ExtractedTask objects
     """
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     # from c1_providers.schema_validator import validate_tasks_json
 
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # validate_tasks_json(data)  # TODO: import from llm-skills.llm-providers
+    # validate_tasks_json(data)  # TODO: import from llm-providers
 
     tasks = []
     for entry in data:
@@ -807,8 +807,8 @@ Examples:
 
     args = parser.parse_args()
 
-    # TODO: import from llm-skills.llm-providers
-    from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+    # TODO: import from llm-providers
+    from c1_providers.providers import create_provider  # noqa: requires llm-providers on sys.path
     provider = create_provider(args.provider, args.model)
 
     if args.passages:

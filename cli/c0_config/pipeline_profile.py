@@ -14,7 +14,7 @@ from typing import Dict, List
 class PipelineProfile:
     # identity
     profile_name: str = "default"
-    run_dir: str = "llm-skills.extraction-pipeline/data/pipeline-runs/default-profile"
+    run_dir: str = "extraction-pipeline/data/pipeline-runs/default-profile"
 
     # source data (stage 1a)
     dataset: str = "wikimedia/wikipedia"
@@ -33,7 +33,7 @@ class PipelineProfile:
     trace_model: str = "claude-opus-4-6"
 
     # evaluation (stage 5)
-    config_file: str = "llm-skills.llm-providers/configs/models.yaml"
+    config_file: str = "llm-providers/configs/models.yaml"
     ollama_url: str = "http://localhost:11434/v1"
     lmproxy_base_url: str = "http://localhost:8080/v1"
     iosys_base_url: str = "http://llm.iosys.net/v1"

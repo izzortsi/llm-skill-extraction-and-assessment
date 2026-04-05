@@ -244,12 +244,12 @@ def create_provider(
         adapter_path = None
         for _i in range(6):
             candidate = candidate.parent
-            path = candidate / "llm-skills.cli" / "c1_tools" / "claude_code_provider.py"
+            path = candidate / "cli" / "c1_tools" / "claude_code_provider.py"
             if path.is_file():
                 adapter_path = path
                 break
         if adapter_path is None:
-            raise RuntimeError("cannot locate llm-skills.cli/c1_tools/claude_code_provider.py")
+            raise RuntimeError("cannot locate cli/c1_tools/claude_code_provider.py")
         spec = importlib.util.spec_from_file_location("claude_code_provider", str(adapter_path))
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

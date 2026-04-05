@@ -182,7 +182,7 @@ def load_traces(filepath: Path) -> List[ReasoningTrace]:
     Returns:
         List of ReasoningTrace objects
     """
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     # from c1_providers.schema_validator import validate_traces_jsonl
 
     raw_entries = []
@@ -193,7 +193,7 @@ def load_traces(filepath: Path) -> List[ReasoningTrace]:
                 continue
             raw_entries.append(json.loads(line))
 
-    # validate_traces_jsonl(raw_entries)  # TODO: import from llm-skills.llm-providers
+    # validate_traces_jsonl(raw_entries)  # TODO: import from llm-providers
 
     traces = []
     for d in raw_entries:

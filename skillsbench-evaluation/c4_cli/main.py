@@ -1,7 +1,7 @@
 """
 main.py
 
-CLI entry point for llm-skills.skillsbench-evaluation.
+CLI entry point for skillsbench-evaluation.
 Evaluation-related commands only (stages 5a, 6, 7).
 
 Usage:
@@ -31,7 +31,7 @@ _bootstrap.setup_shared_data()
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="llm-skills.skillsbench-evaluation: Skill evaluation and benchmarking",
+        description="skillsbench-evaluation: Skill evaluation and benchmarking",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:

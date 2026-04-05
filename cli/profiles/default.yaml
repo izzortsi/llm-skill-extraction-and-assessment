@@ -1,5 +1,5 @@
 profile_name: default
-run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/default-profile
+run_dir: extraction-pipeline/data/pipeline-runs/default-profile
 lmproxy_base_url: "http://localhost:8080/v1"
 
 # source data (stage 1a)
@@ -19,7 +19,7 @@ trace_provider: anthropic
 trace_model: claude-opus-4-6
 
 # evaluation (stages 5, 8)
-config_file: llm-skills.llm-providers/configs/models.yaml
+config_file: llm-providers/configs/models.yaml
 ollama_url: http://localhost:11434/v1
 eval_models:
   - qwen2.5-3b

@@ -1,5 +1,5 @@
 profile_name: iosys
-run_dir: llm-skills.extraction-pipeline/data/pipeline-runs/iosys-profile
+run_dir: extraction-pipeline/data/pipeline-runs/iosys-profile
 iosys_base_url: "http://llm.iosys.net/v1"
 
 # source data (stage 1a)

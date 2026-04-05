@@ -21,8 +21,8 @@
 #
 # Usage:
 #   cd kcg-ml-llm
-#   bash llm-skills.skillsbench-evaluation/scripts/run_validation.sh
-#   bash llm-skills.skillsbench-evaluation/scripts/run_validation.sh --data-dir llm-skills.shared-data/skillmix-pipeline-run
+#   bash skillsbench-evaluation/scripts/run_validation.sh
+#   bash skillsbench-evaluation/scripts/run_validation.sh --data-dir llm-skills.shared-data/skillmix-pipeline-run
 
 set -euo pipefail
 
@@ -69,7 +69,7 @@ else
 fi
 
 # Config-driven model routing (primary path)
-CONFIG_FILE="${REPO_ROOT}/llm-skills.llm-providers/configs/models.yaml"
+CONFIG_FILE="${REPO_ROOT}/llm-providers/configs/models.yaml"
 
 # Legacy models (fallback only, used when CONFIG_FILE does not exist)
 OLLAMA_URL="http://localhost:11434/v1"
@@ -108,7 +108,7 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin" ]]; 
 else
     SEP=":"
 fi
-export PYTHONPATH="${PY_REPO_ROOT}/llm-skills.skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/llm-skills.shared-data${SEP}${PY_REPO_ROOT}/llm-skills.llm-providers${SEP}${PYTHONPATH:-}"
+export PYTHONPATH="${PY_REPO_ROOT}/skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/llm-skills.shared-data${SEP}${PY_REPO_ROOT}/llm-providers${SEP}${PYTHONPATH:-}"
 
 if [[ "$CLEAN" == true ]]; then
     log "Cleaning old validation results in ${VALIDATION_DIR}"

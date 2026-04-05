@@ -247,7 +247,7 @@ def extract_skills_from_traces(
 
     skills = []
     model_name = getattr(provider, "model_name", getattr(provider, "model", "unknown"))
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     import re as _re
     short_model = _re.sub(r"^claude-", "", model_name)
     short_model = _re.sub(r"[:/]", "-", short_model)
@@ -316,13 +316,13 @@ def load_extracted_skills(filepath: Path) -> List[ExtractedSkill]:
     Returns:
         List of ExtractedSkill objects
     """
-    # TODO: import from llm-skills.llm-providers
+    # TODO: import from llm-providers
     # from c1_providers.schema_validator import validate_skills_json
 
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # validate_skills_json(data)  # TODO: import from llm-skills.llm-providers
+    # validate_skills_json(data)  # TODO: import from llm-providers
 
     skills = []
     for entry in data:
@@ -358,8 +358,8 @@ def main() -> None:
     if not args.traces.exists():
         raise FileNotFoundError(f"Traces file not found: {args.traces}")
 
-    # TODO: import from llm-skills.llm-providers
-    from c1_providers.providers import create_provider  # noqa: requires llm-skills.llm-providers on sys.path
+    # TODO: import from llm-providers
+    from c1_providers.providers import create_provider  # noqa: requires llm-providers on sys.path
     provider = create_provider(args.provider, args.model)
 
     traces = load_traces(args.traces)

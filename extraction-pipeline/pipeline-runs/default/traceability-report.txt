@@ -3,9 +3,9 @@ TRACEABILITY REPORT
 ================================================================================
 
 Generated: 2026-03-25 14:03 UTC
-Tasks file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage1-task-extraction/tasks.json
-Skills file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage4-skill-verification/verified_skills.json
-Passages file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/llm-skills.extraction-pipeline/pipeline-runs/default/stage1-task-extraction/passages.json
+Tasks file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/extraction-pipeline/pipeline-runs/default/stage1-task-extraction/tasks.json
+Skills file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/extraction-pipeline/pipeline-runs/default/stage4-skill-verification/verified_skills.json
+Passages file: /home/istrozzi/Documents/kk-digital-docker/kcg-ml-llm/extraction-pipeline/pipeline-runs/default/stage1-task-extraction/passages.json
 
 --------------------------------------------------------------------------------
 SUMMARY

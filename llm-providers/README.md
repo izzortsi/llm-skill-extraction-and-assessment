@@ -1,4 +1,4 @@
-# llm-skills.llm-providers
+# llm-providers
 
 shared LLM provider abstraction layer used by all llm-skills pipelines.
 

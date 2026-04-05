@@ -1,4 +1,4 @@
-# llm-skills.extraction-pipeline
+# extraction-pipeline
 
 unified extraction library for the llm-skills pipeline. handles stages 1a through 4b
 (text extraction, task generation, trace capture, skill extraction, verification, and
@@ -18,7 +18,7 @@ extracts procedural skills from text corpora through a multi-stage pipeline:
 ## commands
 
 ```bash
-cd llm-skills.extraction-pipeline
+cd extraction-pipeline
 python -m c4_cli.main extract-passages  --help   # stage 1a
 python -m c4_cli.main extract-tasks     --help   # stage 1b
 python -m c4_cli.main capture-traces    --help   # stage 2
@@ -76,4 +76,4 @@ c4_cli/            main.py with 11 commands
 - openai (Ollama model access)
 - datasets (HuggingFace dataset loading)
 - pyyaml (skill markdown parsing)
-- llm-skills.llm-providers (LLM provider abstraction, used by stage 4 --revise)
+- llm-providers (LLM provider abstraction, used by stage 4 --revise)
