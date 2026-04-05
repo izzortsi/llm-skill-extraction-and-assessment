@@ -1,4 +1,4 @@
-"""integration tests for c1_providers.pipeline_providers -- real API calls only.
+"""integration tests for providers.pipeline_providers -- real API calls only.
 
 every test requires its provider's API key to be explicitly set.
 missing keys cause hard failures, not silent skips.
@@ -8,7 +8,7 @@ import os
 import json
 import pytest
 
-from c1_providers.pipeline_providers import (
+from providers.pipeline_providers import (
     PipelineChatResult,
     AnthropicOAuthProvider,
     AnthropicAPIProvider,
@@ -246,7 +246,7 @@ class TestAnthropicOAuthProvider:
         try:
             from anthropic_oauth import create_oauth_client
         except ImportError:
-            from c1_providers.credentials import get_claude_oauth_token
+            from providers.credentials import get_claude_oauth_token
             if not get_claude_oauth_token():
                 raise ValueError(
                     "AnthropicOAuthProvider requires either the anthropic_oauth package "

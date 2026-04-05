@@ -6,7 +6,7 @@ import pytest
 
 def test_load_model_config_returns_model_entries():
     """load_model_config parses YAML and returns ModelConfig with model entries."""
-    from c1_providers.model_config import load_model_config
+    from providers.model_config import load_model_config
     config_data = {
         "models": {
             "qwen2.5-3b": {
@@ -33,7 +33,7 @@ def test_load_model_config_returns_model_entries():
 
 def test_load_model_config_resolves_api_key_from_env():
     """api_key_env field resolves to actual key from environment."""
-    from c1_providers.model_config import load_model_config
+    from providers.model_config import load_model_config
     config_data = {
         "models": {
             "glm": {
@@ -59,7 +59,7 @@ def test_load_model_config_resolves_api_key_from_env():
 
 def test_load_model_config_raises_on_missing_models_key():
     """Config without 'models' key raises ValueError."""
-    from c1_providers.model_config import load_model_config
+    from providers.model_config import load_model_config
     config_data = {"judge": {"model": "x"}}
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -75,7 +75,7 @@ def test_load_model_config_raises_on_missing_models_key():
 
 def test_model_entry_list_returns_all_model_names():
     """ModelConfig.model_names returns list of all configured model aliases."""
-    from c1_providers.model_config import load_model_config
+    from providers.model_config import load_model_config
     config_data = {
         "models": {
             "model-a": {"litellm_model": "openai/a"},

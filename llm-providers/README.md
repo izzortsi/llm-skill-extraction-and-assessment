@@ -14,8 +14,8 @@ also contains training-domain pipeline providers for agentic training data gener
 
 ```python
 # registered via _bootstrap.setup_providers()
-from c1_providers.providers import create_provider
-from c1_providers.model_config import load_model_config
+from providers.providers import create_provider
+from providers.model_config import load_model_config
 
 provider = create_provider("anthropic", "claude-opus-4-6")
 result = provider.chat([{"role": "user", "content": "hello"}])
@@ -24,10 +24,10 @@ result = provider.chat([{"role": "user", "content": "hello"}])
 ## structure
 
 ```
-c0_utils/              uid, stat_utils
-c1_providers/          providers, credentials, litellm_provider, mock_provider,
+utils/              uid, stat_utils
+providers/          providers, credentials, litellm_provider, mock_provider,
                        model_config, schema_validator, stat_utils
-c2_training_domain/    pipeline_providers (agentic training)
+training_domain/    pipeline_providers (agentic training)
 configs/               models.yaml, models.example.yaml
 docs/                  environment-setup.md
 scripts/               oauth_query.py, zai_oauth_query.py

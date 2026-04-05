@@ -6,8 +6,8 @@ skips if no OpenRouter-compatible API key is available.
 import os
 import pytest
 
-from c1_providers.litellm_provider import LiteLLMProvider
-from c1_providers.providers import ChatResult
+from providers.litellm_provider import LiteLLMProvider
+from providers.providers import ChatResult
 
 
 _has_openrouter_key = bool(

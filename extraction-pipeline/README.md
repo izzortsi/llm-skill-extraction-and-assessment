@@ -19,15 +19,15 @@ extracts procedural skills from text corpora through a multi-stage pipeline:
 
 ```bash
 cd extraction-pipeline
-python -m c4_cli.main extract-passages  --help   # stage 1a
-python -m c4_cli.main extract-tasks     --help   # stage 1b
-python -m c4_cli.main capture-traces    --help   # stage 2
-python -m c4_cli.main extract-skills    --help   # stage 3
-python -m c4_cli.main verify-skills     --help   # stage 4
-python -m c4_cli.main compose-skills    --help   # stage 4b
-python -m c4_cli.main traceability-report --help  # stage 7
-python -m c4_cli.main export-csv        --help   # stage 7
-python -m c4_cli.main format            --help   # JSON/markdown converter
+python -m cli.main extract-passages  --help   # stage 1a
+python -m cli.main extract-tasks     --help   # stage 1b
+python -m cli.main capture-traces    --help   # stage 2
+python -m cli.main extract-skills    --help   # stage 3
+python -m cli.main verify-skills     --help   # stage 4
+python -m cli.main compose-skills    --help   # stage 4b
+python -m cli.main traceability-report --help  # stage 7
+python -m cli.main export-csv        --help   # stage 7
+python -m cli.main format            --help   # JSON/markdown converter
 ```
 
 ## output structure
@@ -62,12 +62,12 @@ data/pipeline-runs/default-profile/
 ## structure
 
 ```
-c0_utils/          shared utilities (uid, text_utils, data_structures)
-c1_types/          data contracts (ExtractedTask, ExtractedSkill)
-c1_tools/          file loaders, skill registry, JSON/markdown formatter
-c2_extraction/     passage, task, trace, skill extraction + verification
-c2_composition/    skill composition operators (seq, par, cond, sem)
-c4_cli/            main.py with 11 commands
+utils/          shared utilities (uid, text_utils, data_structures)
+schemas/          data contracts (ExtractedTask, ExtractedSkill)
+tools/          file loaders, skill registry, JSON/markdown formatter
+extraction/     passage, task, trace, skill extraction + verification
+composition/    skill composition operators (seq, par, cond, sem)
+cli/            main.py with 11 commands
 ```
 
 ## dependencies

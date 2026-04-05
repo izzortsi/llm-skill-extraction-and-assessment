@@ -205,7 +205,7 @@ if [[ -f "${CONFIG_FILE}" ]]; then
         fi
 
         log "  Running all models / ${mode}"
-        python3 -m c3_skillsbench.corpus_harness \
+        python3 -m skillsbench.corpus_harness \
             --tasks "${FILTERED_TASKS}" \
             --skills "${FILTERED_SKILLS}" \
             --config "${CONFIG_FILE}" \
@@ -230,7 +230,7 @@ else
             fi
 
             log "  Running ${model} / ${mode}"
-            python3 -m c3_skillsbench.corpus_harness \
+            python3 -m skillsbench.corpus_harness \
                 --tasks "${FILTERED_TASKS}" \
                 --skills "${FILTERED_SKILLS}" \
                 --models "${model}" \
@@ -251,7 +251,7 @@ else
                 log "  [skip] ${ZAI_MODEL} / ${mode}"
             else
                 log "  Running ${ZAI_MODEL} / ${mode}"
-                OPENAI_API_KEY="${ZHIPU_API_KEY}" python3 -m c3_skillsbench.corpus_harness \
+                OPENAI_API_KEY="${ZHIPU_API_KEY}" python3 -m skillsbench.corpus_harness \
                     --tasks "${FILTERED_TASKS}" \
                     --skills "${FILTERED_SKILLS}" \
                     --models "${ZAI_MODEL}" \
@@ -273,7 +273,7 @@ else
                 log "  [skip] ${ANTHROPIC_MODEL} / ${mode}"
             else
                 log "  Running ${ANTHROPIC_MODEL} / ${mode}"
-                python3 -m c3_skillsbench.corpus_harness \
+                python3 -m skillsbench.corpus_harness \
                     --tasks "${FILTERED_TASKS}" \
                     --skills "${FILTERED_SKILLS}" \
                     --models "${ANTHROPIC_MODEL}" \
@@ -372,7 +372,7 @@ print(f'  Merged ${mode}: {len(merged)} episodes from {len(files)} files')
 "
 
     mkdir -p "${HEATMAPS_DIR}/${mode}"
-    python3 -m c3_skillsbench.visualization \
+    python3 -m skillsbench.visualization \
         --results "${MERGED}" \
         -o "${HEATMAPS_DIR}/${mode}" \
         --type all --dpi 200 \
@@ -396,7 +396,7 @@ print(f'  All merged: {len(merged)} episodes from {len(files)} files')
 "
 
 mkdir -p "${HEATMAPS_DIR}/cross-mode"
-python3 -m c3_skillsbench.visualization \
+python3 -m skillsbench.visualization \
     --results "${ALL_MERGED}" \
     -o "${HEATMAPS_DIR}/cross-mode" \
     --type charts --dpi 200 \

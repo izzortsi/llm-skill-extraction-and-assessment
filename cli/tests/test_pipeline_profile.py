@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from c0_config.pipeline_profile import PipelineProfile, MINIMAL_OVERRIDES, apply_minimal
+from config.pipeline_profile import PipelineProfile, MINIMAL_OVERRIDES, apply_minimal
 
 
 def test_eval_models_default_is_list_of_dicts():

@@ -113,7 +113,7 @@ for mode in "${MODES[@]}"; do
     mkdir -p "${MODE_HEATMAP_DIR}"
 
     log "  Generating heatmaps for mode: ${mode}"
-    python -m c3_skillsbench.visualization \
+    python -m skillsbench.visualization \
         --results "${MERGED_FILE}" \
         --output-dir "${MODE_HEATMAP_DIR}" \
         --type all --dpi 200 \
@@ -139,7 +139,7 @@ if [[ ${#COMBINED_ARGS[@]} -gt 0 ]]; then
     mkdir -p "${HEATMAPS_DIR}/combined"
 
     log "  Merging ${#COMBINED_ARGS[@]} mode files for combined visualization"
-    python -m c3_skillsbench.visualization \
+    python -m skillsbench.visualization \
         --results "${COMBINED_ARGS[@]}" \
         --output-dir "${HEATMAPS_DIR}/combined" \
         --mode per-mode --type all --dpi 200 \

@@ -25,15 +25,15 @@ the assessment.
 
 ```bash
 cd skillsbench-evaluation
-python -m c4_cli.main run-skillsbench --help  # run corpus evaluation (stage 5)
-python -m c4_cli.main heatmaps       --help  # generate visualizations (stage 6)
+python -m cli.main run-skillsbench --help  # run corpus evaluation (stage 5)
+python -m cli.main heatmaps       --help  # generate visualizations (stage 6)
 ```
 
 ## examples
 
 ```bash
 # evaluate with config-driven model routing
-python -m c4_cli.main run-skillsbench \
+python -m cli.main run-skillsbench \
     --tasks ../extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
     --skills ../extraction-pipeline/data/pipeline-runs/default-profile/stage4-skill-verification/verified_skills.json \
     --config ../llm-providers/configs/models.yaml \
@@ -41,7 +41,7 @@ python -m c4_cli.main run-skillsbench \
     --output results.json -v
 
 # generate heatmaps from results
-python -m c4_cli.main heatmaps \
+python -m cli.main heatmaps \
     --results results.json \
     -o heatmaps/ --type all --dpi 200
 ```
@@ -49,10 +49,10 @@ python -m c4_cli.main heatmaps \
 ## structure
 
 ```
-c0_config/         experiment_config, skill_injection, trial_result
-c2_evaluation/     llm_judge, effectiveness, proof_verifier
-c3_skillsbench/    corpus_harness, visualization
-c4_cli/            main.py, run_skillsbench.py
+config/         experiment_config, skill_injection, trial_result
+evaluation/     llm_judge, effectiveness, proof_verifier
+skillsbench/    corpus_harness, visualization
+cli/            main.py, run_skillsbench.py
 scripts/           run_experiment.sh, run_experiment_v2.sh, run_validation.sh
 tests/             test_litellm_provider, test_model_config
 ```
@@ -60,4 +60,4 @@ tests/             test_litellm_provider, test_model_config
 ## dependencies
 
 - llm-providers (LLM provider abstraction, model config, judge config)
-- extraction-pipeline (ExtractedTask, ExtractedSkill types via c1_types/)
+- extraction-pipeline (ExtractedTask, ExtractedSkill types via schemas/)

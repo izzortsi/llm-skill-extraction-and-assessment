@@ -24,16 +24,16 @@ claude-opus-4-6). when --config is provided, the judge is resolved from the conf
 
 ```bash
 cd skillmix-evaluation
-python -m c4_cli.main run-skillmix --help  # run SkillMix experiment (stage 8)
-python -m c4_cli.main report       --help  # generate summary report (stage 8)
-python -m c4_cli.main visualize    --help  # generate charts (stage 9)
+python -m cli.main run-skillmix --help  # run SkillMix experiment (stage 8)
+python -m cli.main report       --help  # generate summary report (stage 8)
+python -m cli.main visualize    --help  # generate charts (stage 9)
 ```
 
 ## examples
 
 ```bash
 # run evaluation with config-driven model routing
-python -m c4_cli.main run-skillmix \
+python -m cli.main run-skillmix \
     --tasks ../extraction-pipeline/data/pipeline-runs/default-profile/stage1-task-extraction/tasks.json \
     --skills-dir ../extraction-pipeline/data/pipeline-runs/default-profile/stage4b-skill-composition \
     --models qwen2.5-3b,qwen2.5-7b \
@@ -41,12 +41,12 @@ python -m c4_cli.main run-skillmix \
     --output-dir results/ -v
 
 # generate text report
-python -m c4_cli.main report \
+python -m cli.main report \
     --results-dir results/ \
     --output results/report.txt
 
 # generate charts
-python -m c4_cli.main visualize \
+python -m cli.main visualize \
     --results-dir results/ \
     --output-dir charts/ --dpi 200
 ```
@@ -75,9 +75,9 @@ the visualizer parses composition metadata from skill names:
 ## structure
 
 ```
-c2_analytics/      summary statistics, visualization charts
-c3_skillmix/       harness, runner, report
-c4_cli/            main.py, run_skillmix.py, report.py, visualize.py
+analytics/      summary statistics, visualization charts
+skillmix/       harness, runner, report
+cli/            main.py, run_skillmix.py, report.py, visualize.py
 ```
 
 ## dependencies

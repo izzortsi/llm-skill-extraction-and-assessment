@@ -4,8 +4,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import yaml
-from c0_config.pipeline_profile import PipelineProfile
-from c2_orchestration.config_generator import generate_models_yaml
+from config.pipeline_profile import PipelineProfile
+from orchestration.config_generator import generate_models_yaml
 
 
 def test_generate_lmproxy_models(tmp_path):

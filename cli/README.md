@@ -10,22 +10,22 @@ Rich-powered terminal UI, YAML experiment profiles, and crash recovery.
 cd cli
 
 # zero-setup run using Claude Code CLI (no API keys or servers needed)
-python3 -m c4_cli.main run --stages all --minimal --claude-code --clean
+python3 -m cli.main run --stages all --minimal --claude-code --clean
 
 # same with a specific model tier
-python3 -m c4_cli.main run --stages all --minimal --claude-code sonnet --clean
+python3 -m cli.main run --stages all --minimal --claude-code sonnet --clean
 
 # minimal end-to-end run via lmproxy/Ollama (fewest API calls)
-python3 -m c4_cli.main run --stages all --minimal --clean
+python3 -m cli.main run --stages all --minimal --clean
 
 # interactive setup: discovers providers, prompts for model selection
-python3 -m c4_cli.main config create --interactive
+python3 -m cli.main config create --interactive
 
 # check environment before running
-python3 -m c4_cli.main setup
+python3 -m cli.main setup
 
 # see what completed
-python3 -m c4_cli.main status
+python3 -m cli.main status
 ```
 
 ## commands
@@ -35,7 +35,7 @@ python3 -m c4_cli.main status
 execute pipeline stages with profile-based configuration.
 
 ```bash
-python3 -m c4_cli.main run [options]
+python3 -m cli.main run [options]
 
 options:
   --stages RANGE       all, 1-4, 5-9, extraction, evaluation, skillsbench, skillmix, 1a,3,5
@@ -53,34 +53,34 @@ examples:
 
 ```bash
 # full pipeline with defaults (5 chunks, all modes, all models)
-python3 -m c4_cli.main run --stages all
+python3 -m cli.main run --stages all
 
 # extraction only (stages 1a through 4)
-python3 -m c4_cli.main run --stages extraction
+python3 -m cli.main run --stages extraction
 
 # evaluation only (stages 5-9, requires prior extraction output)
-python3 -m c4_cli.main run --stages evaluation
+python3 -m cli.main run --stages evaluation
 
 # skillsbench only (stages 5-6)
-python3 -m c4_cli.main run --stages skillsbench
+python3 -m cli.main run --stages skillsbench
 
 # skillmix only (stages 8-9, requires stages 1b + 4b output)
-python3 -m c4_cli.main run --stages skillmix
+python3 -m cli.main run --stages skillmix
 
 # single stage
-python3 -m c4_cli.main run --stages 3
+python3 -m cli.main run --stages 3
 
 # zero-setup with Claude Code (default: haiku)
-python3 -m c4_cli.main run --stages all --minimal --claude-code --clean
+python3 -m cli.main run --stages all --minimal --claude-code --clean
 
 # zero-setup with Claude Code opus
-python3 -m c4_cli.main run --stages all --minimal --claude-code opus --clean
+python3 -m cli.main run --stages all --minimal --claude-code opus --clean
 
 # custom profile
-python3 -m c4_cli.main run --profile my-experiment --stages all --clean
+python3 -m cli.main run --profile my-experiment --stages all --clean
 
 # interactive mode: discovers providers, prompts for model selection
-python3 -m c4_cli.main run --interactive
+python3 -m cli.main run --interactive
 ```
 
 ### config
@@ -88,24 +88,24 @@ python3 -m c4_cli.main run --interactive
 manage experiment profiles stored as YAML files in `profiles/`.
 
 ```bash
-python3 -m c4_cli.main config list                  # list saved profiles
-python3 -m c4_cli.main config show default           # display profile config
-python3 -m c4_cli.main config create my-experiment   # create with defaults
-python3 -m c4_cli.main config create --interactive   # create via prompts (discovers providers)
-python3 -m c4_cli.main config delete my-experiment   # delete a profile
+python3 -m cli.main config list                  # list saved profiles
+python3 -m cli.main config show default           # display profile config
+python3 -m cli.main config create my-experiment   # create with defaults
+python3 -m cli.main config create --interactive   # create via prompts (discovers providers)
+python3 -m cli.main config delete my-experiment   # delete a profile
 ```
 
 after creating a profile, run the pipeline with it:
 
 ```bash
 # run all stages with a named profile
-python3 -m c4_cli.main run --profile my-experiment --stages all --clean
+python3 -m cli.main run --profile my-experiment --stages all --clean
 
 # run extraction stages only
-python3 -m c4_cli.main run --profile my-experiment --stages extraction
+python3 -m cli.main run --profile my-experiment --stages extraction
 
 # run with minimal overrides (reduces chunks, skills, models)
-python3 -m c4_cli.main run --profile my-experiment --stages all --minimal --clean
+python3 -m cli.main run --profile my-experiment --stages all --minimal --clean
 ```
 
 ### status
@@ -113,9 +113,9 @@ python3 -m c4_cli.main run --profile my-experiment --stages all --minimal --clea
 show which stages have completed output in the run directory.
 
 ```bash
-python3 -m c4_cli.main status                       # default run directory
-python3 -m c4_cli.main status --profile my-experiment
-python3 -m c4_cli.main status --run-dir /path/to/run
+python3 -m cli.main status                       # default run directory
+python3 -m cli.main status --profile my-experiment
+python3 -m cli.main status --run-dir /path/to/run
 ```
 
 ### setup
@@ -123,8 +123,8 @@ python3 -m c4_cli.main status --run-dir /path/to/run
 pre-flight environment checks: provider connectivity, API keys, Python packages.
 
 ```bash
-python3 -m c4_cli.main setup                        # check default profile
-python3 -m c4_cli.main setup --profile my-experiment
+python3 -m cli.main setup                        # check default profile
+python3 -m cli.main setup --profile my-experiment
 ```
 
 ## stage range syntax
@@ -172,10 +172,10 @@ stage  name                pipeline project                      commands
 
 each stage runs as a subprocess inside its pipeline directory:
 
-    (cd <pipeline-dir> && python3 -m c4_cli.main <command> <args>)
+    (cd <pipeline-dir> && python3 -m cli.main <command> <args>)
 
 subprocess isolation prevents Python module shadowing between pipelines that share
-package names (c0_utils, c1_tools, c2_extraction).
+package names (utils, tools, extraction).
 
 ## profiles
 
@@ -246,22 +246,22 @@ the first incomplete stage. use `--clean` to force a full re-run.
 
 ```
 cli/
-    c0_config/
+    config/
         pipeline_stage.py       stage metadata (id, name, pipeline_dir, commands, dependencies)
         pipeline_profile.py     experiment profile dataclass + minimal overrides
         stage_registry.py       registry of all 11 stages with range parser
-    c1_tools/
+    tools/
         profile_loader.py       YAML load/save for profiles
         stage_runner.py         subprocess execution of individual stages
         output_inspector.py     run directory inspection and crash recovery
         provider_checker.py     pre-flight provider connectivity checks (lmproxy, ollama, anthropic, zai, iosys, lm-studio, anthropic-oauth)
         provider_discovery.py   runtime provider/model discovery (probes all providers, checks API keys and OAuth tokens)
         claude_code_provider.py ClaudeCodeProvider adapter (claude -p subprocess wrapper)
-    c2_orchestration/
+    orchestration/
         pipeline_executor.py    multi-stage orchestration with dependency resolution + lmproxy session
         stage_output_wirer.py   map profile config to per-stage CLI arguments + provider routing
         config_generator.py     generate models.yaml from profile eval_models
-    c4_cli/
+    cli/
         main.py                 entry point: routes run/config/status/setup commands
         command_run.py          run command implementation (--claude-code flag)
         command_config.py       config command implementation (--interactive with discovery)

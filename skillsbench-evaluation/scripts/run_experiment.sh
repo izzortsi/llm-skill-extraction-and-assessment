@@ -73,7 +73,7 @@ sanitize_model() {
 cd "$REPO_ROOT"
 
 # Add module paths to PYTHONPATH
-# NOTE: c2_extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
+# NOTE: extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
 BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
 PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
@@ -110,7 +110,7 @@ for domain in "${DOMAINS[@]}"; do
         continue
     fi
     log "  Extracting tasks for domain: ${domain}"
-    PYTHONPATH="${PYTHONPATH_TEXT}" python -m c2_extraction.task_extractor \
+    PYTHONPATH="${PYTHONPATH_TEXT}" python -m extraction.task_extractor \
         --dataset "${DATASET}" --subset "${SUBSET}" \
         --domain "${domain}" \
         --max-chunks "${MAX_CHUNKS}" --chunk-size "${CHUNK_SIZE}" \
@@ -158,7 +158,7 @@ if [[ -f "$TRACES_FILE" ]]; then
     log "  [skip] traces.jsonl already exists"
 else
     log "  Capturing traces with ${TRACE_MODEL} via Ollama"
-    OPENAI_BASE_URL="${OLLAMA_URL}" python -m c2_extraction.trace_runner \
+    OPENAI_BASE_URL="${OLLAMA_URL}" python -m extraction.trace_runner \
         --tasks "${TASKS_ALL}" \
         --output "${TRACES_FILE}" \
         --provider openai --model "${TRACE_MODEL}" -v \
@@ -179,7 +179,7 @@ if [[ -f "$SKILLS_FILE" ]]; then
     log "  [skip] skills.json already exists"
 else
     log "  Extracting skills from traces"
-    python -m c2_extraction.skill_extractor \
+    python -m extraction.skill_extractor \
         --traces "${TRACES_FILE}" \
         --output "${SKILLS_FILE}" \
         --max-skills 15 \
@@ -192,7 +192,7 @@ if [[ -f "$VERIFIED_SKILLS" ]]; then
     log "  [skip] verified_skills.json already exists"
 else
     log "  Verifying and revising skills"
-    python -m c2_extraction.skill_verifier \
+    python -m extraction.skill_verifier \
         --skills "${SKILLS_FILE}" \
         --output "${VERIFIED_SKILLS}" \
         --revise --max-revisions 2 \
@@ -236,7 +236,7 @@ for mode in "${MODES[@]}"; do
         fi
 
         log "  Running ${model} / ${mode}"
-        python -m c3_skillsbench.corpus_harness \
+        python -m skillsbench.corpus_harness \
             --tasks "${TASKS_ALL}" \
             --skills "${VERIFIED_SKILLS}" \
             --models "${model}" \

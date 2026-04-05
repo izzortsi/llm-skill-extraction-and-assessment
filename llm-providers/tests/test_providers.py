@@ -1,4 +1,4 @@
-"""integration tests for c1_providers.providers -- real API calls only.
+"""integration tests for providers.providers -- real API calls only.
 
 every test requires its provider's API key to be explicitly set.
 missing keys cause hard failures, not silent skips.
@@ -7,7 +7,7 @@ missing keys cause hard failures, not silent skips.
 import os
 import pytest
 
-from c1_providers.providers import ChatResult, OpenAIProvider, AnthropicProvider, create_provider
+from providers.providers import ChatResult, OpenAIProvider, AnthropicProvider, create_provider
 
 
 # ---------------------------------------------------------------------------

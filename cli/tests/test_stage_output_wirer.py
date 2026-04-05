@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from c0_config.pipeline_profile import PipelineProfile
-from c2_orchestration.stage_output_wirer import build_stage_args
+from config.pipeline_profile import PipelineProfile
+from orchestration.stage_output_wirer import build_stage_args
 
 
 def test_stage5_eval_models_join(tmp_path):
@@ -85,7 +85,7 @@ def test_stage1b_ollama_uses_openai_provider(tmp_path):
 
 def test_provider_env_iosys():
     """iosys provider_env returns OPENAI_BASE_URL pointing at iosys."""
-    from c2_orchestration.stage_output_wirer import provider_env
+    from orchestration.stage_output_wirer import provider_env
     profile = PipelineProfile()
     profile.iosys_base_url = "http://llm.iosys.net/v1"
     env = provider_env("iosys", profile)

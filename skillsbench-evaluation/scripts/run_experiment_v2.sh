@@ -94,7 +94,7 @@ print(f'{len(eps)} episodes ({len(bl)} baseline, {len(cu)} curated) | baseline={
 cd "$REPO_ROOT"
 
 # Add module paths to PYTHONPATH
-# NOTE: c2_extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
+# NOTE: extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
 BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/skillmix-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
 # Phase 1 (task extraction) needs text-extraction-pipeline
@@ -138,7 +138,7 @@ for domain in "${DOMAINS[@]}"; do
         continue
     fi
     log "  [${DOMAIN_IDX}/${#DOMAINS[@]}] Extracting tasks for domain: ${domain}"
-    PYTHONPATH="${PYTHONPATH_TEXT}" python -m c2_extraction.task_extractor \
+    PYTHONPATH="${PYTHONPATH_TEXT}" python -m extraction.task_extractor \
         --dataset "${DATASET}" --subset "${SUBSET}" \
         --domain "${domain}" \
         --max-chunks "${MAX_CHUNKS}" --chunk-size "${CHUNK_SIZE}" \
@@ -184,7 +184,7 @@ if [[ -f "$TRACES_FILE" ]]; then
     log "  [skip] traces.jsonl already exists (${TRACE_COUNT} traces)"
 else
     log "  Capturing ${TASK_COUNT} traces with ${TRACE_MODEL} via Anthropic"
-    python -m c2_extraction.trace_runner \
+    python -m extraction.trace_runner \
         --tasks "${TASKS_ALL}" \
         --output "${TRACES_FILE}" \
         --provider anthropic --model "${TRACE_MODEL}" -v \
@@ -205,7 +205,7 @@ if [[ -f "$SKILLS_FILE" ]]; then
     log "  [skip] skills.json already exists (${SKILL_RAW}/${MAX_SKILLS} skills)"
 else
     log "  Extracting skills from traces (max ${MAX_SKILLS}, atomic emphasis)"
-    python -m c2_extraction.skill_extractor \
+    python -m extraction.skill_extractor \
         --traces "${TRACES_FILE}" \
         --output "${SKILLS_FILE}" \
         --max-skills "${MAX_SKILLS}" \
@@ -226,7 +226,7 @@ if [[ -f "$VERIFIED_SKILLS" ]]; then
     log "  [skip] verified_skills.json already exists"
 else
     log "  Verifying and revising ${SKILL_RAW} skills (max 2 revision rounds)"
-    python -m c2_extraction.skill_verifier \
+    python -m extraction.skill_verifier \
         --skills "${SKILLS_FILE}" \
         --output "${VERIFIED_SKILLS}" \
         --revise --max-revisions 2 \
@@ -371,7 +371,7 @@ for mode in "${MODES[@]}"; do
         fi
 
         log "  [${EVAL_IDX}/${TOTAL_EVALS}] Running ${model} / ${mode}"
-        python -m c3_skillsbench.corpus_harness \
+        python -m skillsbench.corpus_harness \
             --tasks "${TASKS_ALL}" \
             --skills "${VERIFIED_SKILLS}" \
             --models "${model}" \
@@ -404,7 +404,7 @@ for mode in "${MODES[@]}"; do
     fi
 
     log "  [${EVAL_IDX}/${TOTAL_EVALS}] Running ${ZAI_MODEL} / ${mode}"
-    OPENAI_API_KEY="${ZHIPU_API_KEY}" python -m c3_skillsbench.corpus_harness \
+    OPENAI_API_KEY="${ZHIPU_API_KEY}" python -m skillsbench.corpus_harness \
         --tasks "${TASKS_ALL}" \
         --skills "${VERIFIED_SKILLS}" \
         --models "${ZAI_MODEL}" \
@@ -436,7 +436,7 @@ for mode in "${MODES[@]}"; do
     fi
 
     log "  [${EVAL_IDX}/${TOTAL_EVALS}] Running ${ANTHROPIC_MODEL} / ${mode}"
-    python -m c3_skillsbench.corpus_harness \
+    python -m skillsbench.corpus_harness \
         --tasks "${TASKS_ALL}" \
         --skills "${VERIFIED_SKILLS}" \
         --models "${ANTHROPIC_MODEL}" \
@@ -473,7 +473,7 @@ for model in "${OLLAMA_MODELS[@]}"; do
     fi
 
     log "  [${SM_IDX}/${TOTAL_SKILLMIX}] SkillMix: ${model}"
-    OPENAI_BASE_URL="${OLLAMA_URL}" python -m c3_skillmix.runner \
+    OPENAI_BASE_URL="${OLLAMA_URL}" python -m skillmix.runner \
         --tasks "${TASKS_ALL}" \
         --provider openai --models "${model}" \
         --judge-provider anthropic --judge-model claude-opus-4-6 \
@@ -489,7 +489,7 @@ if [[ -f "$SKILLMIX_ZAI" ]]; then
     log "  [${SM_IDX}/${TOTAL_SKILLMIX}] [skip] SkillMix ${ZAI_MODEL} — result file exists"
 else
     log "  [${SM_IDX}/${TOTAL_SKILLMIX}] SkillMix: ${ZAI_MODEL}"
-    OPENAI_API_KEY="${ZHIPU_API_KEY}" python -m c3_skillmix.runner \
+    OPENAI_API_KEY="${ZHIPU_API_KEY}" python -m skillmix.runner \
         --tasks "${TASKS_ALL}" \
         --provider openai --models "${ZAI_MODEL}" \
         --base-url "${ZAI_BASE_URL}" \
@@ -506,7 +506,7 @@ if [[ -f "$SKILLMIX_ANTH" ]]; then
     log "  [${SM_IDX}/${TOTAL_SKILLMIX}] [skip] SkillMix ${ANTHROPIC_MODEL} — result file exists"
 else
     log "  [${SM_IDX}/${TOTAL_SKILLMIX}] SkillMix: ${ANTHROPIC_MODEL}"
-    python -m c3_skillmix.runner \
+    python -m skillmix.runner \
         --tasks "${TASKS_ALL}" \
         --provider anthropic --models "${ANTHROPIC_MODEL}" \
         --judge-provider anthropic --judge-model claude-opus-4-6 \
@@ -545,7 +545,7 @@ print(f'Merged {len(merged)} episodes from {len(files)} files -> ${MERGED}')
 
     ensure_dir "${HEATMAPS_DIR}/${mode}"
     log "  Generating heatmaps for ${mode}"
-    python -m c3_skillsbench.visualization \
+    python -m skillsbench.visualization \
         --results "${MERGED}" \
         -o "${HEATMAPS_DIR}/${mode}" \
         --dpi 200 \

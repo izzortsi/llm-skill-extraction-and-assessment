@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from c1_tools.claude_code_provider import ClaudeCodeProvider, _messages_to_prompt
+from tools.claude_code_provider import ClaudeCodeProvider, _messages_to_prompt
 
 
 def test_messages_to_prompt_single_user():
@@ -30,7 +30,7 @@ def test_chat_returns_content():
         "result": "The answer is 4.",
         "usage": {"input_tokens": 10, "output_tokens": 5},
     })
-    with patch("c1_tools.claude_code_provider.subprocess.run", return_value=mock_result):
+    with patch("tools.claude_code_provider.subprocess.run", return_value=mock_result):
         provider = ClaudeCodeProvider()
         result = provider.chat([{"role": "user", "content": "What is 2+2?"}])
     assert result.message["content"] == "The answer is 4."
@@ -40,7 +40,7 @@ def test_chat_passes_model_to_cli():
     mock_result = MagicMock()
     mock_result.returncode = 0
     mock_result.stdout = json.dumps({"result": "ok"})
-    with patch("c1_tools.claude_code_provider.subprocess.run", return_value=mock_result) as mock_run:
+    with patch("tools.claude_code_provider.subprocess.run", return_value=mock_result) as mock_run:
         provider = ClaudeCodeProvider(model="claude-opus-4-6")
         provider.chat([{"role": "user", "content": "test"}])
     cmd = mock_run.call_args[0][0]
@@ -58,7 +58,7 @@ def test_chat_raises_on_nonzero_exit():
     mock_result = MagicMock()
     mock_result.returncode = 1
     mock_result.stderr = "claude: command not found"
-    with patch("c1_tools.claude_code_provider.subprocess.run", return_value=mock_result):
+    with patch("tools.claude_code_provider.subprocess.run", return_value=mock_result):
         provider = ClaudeCodeProvider()
         try:
             provider.chat([{"role": "user", "content": "test"}])
@@ -68,19 +68,19 @@ def test_chat_raises_on_nonzero_exit():
 
 
 def test_check_claude_code_available():
-    from c1_tools.provider_discovery import _check_claude_code
+    from tools.provider_discovery import _check_claude_code
     mock_result = MagicMock()
     mock_result.returncode = 0
     mock_result.stdout = "claude 1.0.0"
-    with patch("c1_tools.provider_discovery.subprocess.run", return_value=mock_result):
+    with patch("tools.provider_discovery.subprocess.run", return_value=mock_result):
         status = _check_claude_code()
     assert status.reachable is True
     assert "claude-code" in status.models
 
 
 def test_check_claude_code_not_available():
-    from c1_tools.provider_discovery import _check_claude_code
-    with patch("c1_tools.provider_discovery.subprocess.run") as mock_run:
+    from tools.provider_discovery import _check_claude_code
+    with patch("tools.provider_discovery.subprocess.run") as mock_run:
         mock_run.side_effect = FileNotFoundError("claude not found")
         status = _check_claude_code()
     assert status.reachable is False

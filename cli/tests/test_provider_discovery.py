@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from c1_tools.provider_discovery import (
+from tools.provider_discovery import (
     ProviderStatus, discover_providers, _strip_v1, _probe_lmproxy,
     _probe_ollama, _check_anthropic, _check_openai,
 )
@@ -28,7 +28,7 @@ def test_probe_lmproxy_reachable():
         {"name": "zai", "base_url": "https://api.z.ai"},
     ]
 
-    with patch("c1_tools.provider_discovery.requests.get") as mock_get:
+    with patch("tools.provider_discovery.requests.get") as mock_get:
         mock_get.side_effect = [health_resp, providers_resp]
         status = _probe_lmproxy("http://localhost:8080/v1")
 
@@ -37,7 +37,7 @@ def test_probe_lmproxy_reachable():
 
 
 def test_probe_lmproxy_unreachable():
-    with patch("c1_tools.provider_discovery.requests.get") as mock_get:
+    with patch("tools.provider_discovery.requests.get") as mock_get:
         mock_get.side_effect = Exception("Connection refused")
         status = _probe_lmproxy("http://localhost:8080/v1")
 
@@ -52,7 +52,7 @@ def test_probe_ollama_reachable():
         {"name": "llama3.2:1b"},
     ]}
 
-    with patch("c1_tools.provider_discovery.requests.get", return_value=resp):
+    with patch("tools.provider_discovery.requests.get", return_value=resp):
         status = _probe_ollama("http://localhost:11434/v1")
 
     assert status.reachable is True
@@ -61,7 +61,7 @@ def test_probe_ollama_reachable():
 
 
 def test_probe_ollama_unreachable():
-    with patch("c1_tools.provider_discovery.requests.get") as mock_get:
+    with patch("tools.provider_discovery.requests.get") as mock_get:
         mock_get.side_effect = Exception("Connection refused")
         status = _probe_ollama("http://localhost:11434/v1")
 
@@ -79,21 +79,21 @@ def test_check_anthropic_with_key():
 def test_check_anthropic_no_key():
     env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
     with patch.dict("os.environ", env, clear=True):
-        with patch("c1_tools.provider_discovery.Path.exists", return_value=False):
+        with patch("tools.provider_discovery.Path.exists", return_value=False):
             status = _check_anthropic()
     assert status.reachable is False
 
 
 def test_discover_providers_returns_all():
-    with patch("c1_tools.provider_discovery._probe_lmproxy") as m1, \
-         patch("c1_tools.provider_discovery._probe_ollama") as m2, \
-         patch("c1_tools.provider_discovery._probe_iosys") as m2b, \
-         patch("c1_tools.provider_discovery._probe_lm_studio") as m2c, \
-         patch("c1_tools.provider_discovery._probe_zai") as m2d, \
-         patch("c1_tools.provider_discovery._check_anthropic_oauth") as m2e, \
-         patch("c1_tools.provider_discovery._check_anthropic") as m3, \
-         patch("c1_tools.provider_discovery._check_openai") as m4, \
-         patch("c1_tools.provider_discovery._check_claude_code") as m5:
+    with patch("tools.provider_discovery._probe_lmproxy") as m1, \
+         patch("tools.provider_discovery._probe_ollama") as m2, \
+         patch("tools.provider_discovery._probe_iosys") as m2b, \
+         patch("tools.provider_discovery._probe_lm_studio") as m2c, \
+         patch("tools.provider_discovery._probe_zai") as m2d, \
+         patch("tools.provider_discovery._check_anthropic_oauth") as m2e, \
+         patch("tools.provider_discovery._check_anthropic") as m3, \
+         patch("tools.provider_discovery._check_openai") as m4, \
+         patch("tools.provider_discovery._check_claude_code") as m5:
         m1.return_value = ProviderStatus("lmproxy", False, [], "", "down")
         m2.return_value = ProviderStatus("ollama", False, [], "", "down")
         m2b.return_value = ProviderStatus("iosys", False, [], "", "down")

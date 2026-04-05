@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from c1_providers.litellm_provider import LiteLLMProvider
+from providers.litellm_provider import LiteLLMProvider
 
 def test_litellm_provider_chat_returns_chat_result():
     """LiteLLMProvider.chat() calls litellm.completion and returns ChatResult."""
@@ -11,7 +11,7 @@ def test_litellm_provider_chat_returns_chat_result():
     mock_response.usage.prompt_tokens = 10
     mock_response.usage.completion_tokens = 32
 
-    with patch("c1_providers.litellm_provider.litellm") as mock_litellm:
+    with patch("providers.litellm_provider.litellm") as mock_litellm:
         mock_litellm.completion.return_value = mock_response
         provider = LiteLLMProvider(
             litellm_model="openai/qwen2.5:3b",
@@ -38,7 +38,7 @@ def test_litellm_provider_passes_api_key():
     mock_response.usage.prompt_tokens = 3
     mock_response.usage.completion_tokens = 2
 
-    with patch("c1_providers.litellm_provider.litellm") as mock_litellm:
+    with patch("providers.litellm_provider.litellm") as mock_litellm:
         mock_litellm.completion.return_value = mock_response
         provider = LiteLLMProvider(
             litellm_model="anthropic/claude-opus-4-6",
@@ -59,7 +59,7 @@ def test_litellm_provider_model_name_property():
 
 def test_create_provider_litellm_returns_litellm_provider():
     """create_provider('litellm', ...) returns a LiteLLMProvider."""
-    from c1_providers.providers import create_provider
+    from providers.providers import create_provider
     provider = create_provider(
         "litellm",
         model="openai/qwen2.5:3b",
