@@ -12,7 +12,7 @@
 #
 # Two input modes:
 #   1. FROM EXISTING RUN: point --data-dir at a completed pipeline-run/
-#   2. FROM EXPERIMENT-V2: uses llm-skills.shared-data/260323.skillmix-extraction-experiment/ (default)
+#   2. FROM EXPERIMENT-V2: uses shared-data/260323.skillmix-extraction-experiment/ (default)
 #
 # Prerequisites:
 #   - Ollama running on localhost:11434
@@ -22,7 +22,7 @@
 # Usage:
 #   cd kcg-ml-llm
 #   bash skillsbench-evaluation/scripts/run_validation.sh
-#   bash skillsbench-evaluation/scripts/run_validation.sh --data-dir llm-skills.shared-data/skillmix-pipeline-run
+#   bash skillsbench-evaluation/scripts/run_validation.sh --data-dir shared-data/skillmix-pipeline-run
 
 set -euo pipefail
 
@@ -41,7 +41,7 @@ else
 fi
 
 # Parse arguments
-DATA_DIR="${REPO_ROOT}/llm-skills.shared-data/260323.skillmix-extraction-experiment"
+DATA_DIR="${REPO_ROOT}/shared-data/260323.skillmix-extraction-experiment"
 CLEAN=false
 QUICK=false
 while [[ $# -gt 0 ]]; do
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-VALIDATION_DIR="${REPO_ROOT}/llm-skills.shared-data/260323.skilleval-validation-experiment"
+VALIDATION_DIR="${REPO_ROOT}/shared-data/260323.skilleval-validation-experiment"
 
 # Skills to validate (subset for speed)
 if [[ "$QUICK" == true ]]; then
@@ -108,7 +108,7 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin" ]]; 
 else
     SEP=":"
 fi
-export PYTHONPATH="${PY_REPO_ROOT}/skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/llm-skills.shared-data${SEP}${PY_REPO_ROOT}/llm-providers${SEP}${PYTHONPATH:-}"
+export PYTHONPATH="${PY_REPO_ROOT}/skillsbench-evaluation${SEP}${PY_REPO_ROOT}/llm-skills.text-extraction-pipeline${SEP}${PY_REPO_ROOT}/shared-data${SEP}${PY_REPO_ROOT}/llm-providers${SEP}${PYTHONPATH:-}"
 
 if [[ "$CLEAN" == true ]]; then
     log "Cleaning old validation results in ${VALIDATION_DIR}"

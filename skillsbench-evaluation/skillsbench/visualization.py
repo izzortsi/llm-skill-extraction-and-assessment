@@ -10,8 +10,8 @@ Three heatmap types:
   3. Combined heatmap: baseline pass rate (left) + uplift (right) side-by-side
 
 Usage:
-    python -m skillsbench.visualization --results ../llm-skills.shared-data/260323.skilleval-corpus-judge-results/corpus_results.json -o heatmaps/
-    python -m skillsbench.visualization --results-dir ../llm-skills.shared-data/skilleval-skillmix-results/ -o heatmaps/
+    python -m skillsbench.visualization --results ../shared-data/260323.skilleval-corpus-judge-results/corpus_results.json -o heatmaps/
+    python -m skillsbench.visualization --results-dir ../shared-data/skilleval-skillmix-results/ -o heatmaps/
 """
 
 from __future__ import annotations
@@ -931,16 +931,16 @@ def main() -> None:
         epilog="""
 Examples:
   # All modes combined
-  python -m skillsbench.visualization --results ../llm-skills.shared-data/260323.skilleval-corpus-judge-results/corpus_results.json -o heatmaps/
+  python -m skillsbench.visualization --results ../shared-data/260323.skilleval-corpus-judge-results/corpus_results.json -o heatmaps/
 
   # Filter to stepwise mode only
-  python -m skillsbench.visualization --results ../llm-skills.shared-data/results.json -o heatmaps/ --mode stepwise
+  python -m skillsbench.visualization --results ../shared-data/results.json -o heatmaps/ --mode stepwise
 
   # Separate heatmaps per mode (auto-detected from data)
-  python -m skillsbench.visualization --results ../llm-skills.shared-data/results.json -o heatmaps/ --mode per-mode
+  python -m skillsbench.visualization --results ../shared-data/results.json -o heatmaps/ --mode per-mode
 
   # From SkillMix results
-  python -m skillsbench.visualization --results-dir ../llm-skills.shared-data/skilleval-skillmix-results/ -o heatmaps/
+  python -m skillsbench.visualization --results-dir ../shared-data/skilleval-skillmix-results/ -o heatmaps/
 """,
     )
     parser.add_argument("--results", type=Path, nargs="+", help="Path(s) to corpus_results.json (multiple files merged)")

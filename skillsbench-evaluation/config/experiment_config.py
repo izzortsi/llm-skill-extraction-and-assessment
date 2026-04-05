@@ -96,7 +96,7 @@ class ExperimentConfig:
     repetitions: int = 5
     max_steps: int = 15
     seed: int = 42
-    output_dir: str = "../llm-skills.shared-data/skilleval-results"
+    output_dir: str = "../shared-data/skilleval-results"
     judge: JudgeConfig = field(default_factory=JudgeConfig)
 
     @classmethod
@@ -147,7 +147,7 @@ class ExperimentConfig:
             repetitions=data.get("repetitions", 5),
             max_steps=data.get("max_steps", 15),
             seed=data.get("seed", 42),
-            output_dir=data.get("output_dir", "../llm-skills.shared-data/skilleval-results"),
+            output_dir=data.get("output_dir", "../shared-data/skilleval-results"),
             judge=JudgeConfig(
                 provider=judge_data.get("provider", ""),
                 model=judge_data.get("model", ""),

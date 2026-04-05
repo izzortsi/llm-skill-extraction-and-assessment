@@ -17,7 +17,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-DATA_DIR="${REPO_ROOT}/llm-skills.shared-data/skilleval-experiment-4x10"
+DATA_DIR="${REPO_ROOT}/shared-data/skilleval-experiment-4x10"
 RESULTS_DIR="${DATA_DIR}/results"
 HEATMAPS_DIR="${DATA_DIR}/heatmaps"
 

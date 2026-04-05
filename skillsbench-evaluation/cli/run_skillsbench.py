@@ -42,20 +42,20 @@ Modes:
 Examples:
   # Singlecall, multiple models
   python -m cli.run_skillsbench \\
-    --tasks ../llm-skills.shared-data/tasks.json --skills ../llm-skills.shared-data/verified_skills.json \\
+    --tasks ../shared-data/tasks.json --skills ../shared-data/verified_skills.json \\
     --models qwen3:0.6b,qwen2.5:1.5b,llama3.2:1b,qwen2.5:3b \\
     --base-url http://host.docker.internal:11434/v1
 
   # Stepwise mode
   python -m cli.run_skillsbench \\
-    --tasks ../llm-skills.shared-data/tasks.json --skills ../llm-skills.shared-data/verified_skills.json \\
+    --tasks ../shared-data/tasks.json --skills ../shared-data/verified_skills.json \\
     --models qwen3:0.6b,llama3.2:1b \\
     --base-url http://host.docker.internal:11434/v1 \\
     --mode stepwise --max-steps 6
 
   # Guided mode (procedure-driven multi-turn)
   python -m cli.run_skillsbench \\
-    --tasks ../llm-skills.shared-data/tasks.json --skills ../llm-skills.shared-data/verified_skills.json \\
+    --tasks ../shared-data/tasks.json --skills ../shared-data/verified_skills.json \\
     --models qwen3:0.6b,llama3.2:1b \\
     --base-url http://host.docker.internal:11434/v1 \\
     --mode guided

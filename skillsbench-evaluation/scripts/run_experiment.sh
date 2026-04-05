@@ -21,7 +21,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-DATA_DIR="${REPO_ROOT}/llm-skills.shared-data/skilleval-experiment-4x10"
+DATA_DIR="${REPO_ROOT}/shared-data/skilleval-experiment-4x10"
 RESULTS_DIR="${DATA_DIR}/results"
 LOGS_DIR="${DATA_DIR}/logs"
 
@@ -75,7 +75,7 @@ cd "$REPO_ROOT"
 # Add module paths to PYTHONPATH
 # NOTE: extraction exists in BOTH text-extraction-pipeline and task-skill-extraction-pipeline.
 # Python only uses the first match, so we set PYTHONPATH per-phase below.
-BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/llm-skills.shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
+BASE_PYTHONPATH="${REPO_ROOT}/skillsbench-evaluation:${REPO_ROOT}/shared-data:${REPO_ROOT}/llm-providers:${PYTHONPATH:-}"
 PYTHONPATH_TEXT="${REPO_ROOT}/llm-skills.text-extraction-pipeline:${BASE_PYTHONPATH}"
 PYTHONPATH_SKILL="${REPO_ROOT}/llm-skills.task-skill-extraction-pipeline:${BASE_PYTHONPATH}"
 export PYTHONPATH="${PYTHONPATH_SKILL}"
